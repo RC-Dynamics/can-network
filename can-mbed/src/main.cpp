@@ -3,6 +3,11 @@
 
 #define PIN_RX PB_15
 
+#define F_OSC 16000000
+#define TIME_QUANTA_S 1.0
+// #define TIME_QUANTA_S (2 / F_OSC)
+// #define BIT_RATE 500000
+
 #define SJW 1
 #define SYNC_SEG 1
 #define PROP_SEG 1
@@ -15,14 +20,18 @@ int soft_sync = 0;
 int idle = 0;
 int wrt_pt = 1;
 
+Ticker tq_clock;
+
 enum  states {
   SYNC_ST = 0,
   PHASE1_ST,
   PHASE2_ST
 } states;
 
-
+DigitalIn RX(PIN_RX);
 InterruptIn int_rx(PIN_RX);
+
+Serial pc(USBTX, USBRX, 115200);
 
 void edgeDetector(){
   if (idle)
@@ -40,6 +49,7 @@ void edgeDetector(){
 void bitTimingSM(){
   static int state = PHASE1_ST;
   static int count = 0;
+  pc.printf("State: %d", state);
   switch(state){
     case SYNC_ST:
       count++;
@@ -98,7 +108,7 @@ void bitTimingSM(){
 
 int main() {
   int_rx.fall(&edgeDetector);
-
+  tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
   
 
   while(1) {
