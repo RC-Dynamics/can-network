@@ -22,8 +22,8 @@ DigitalOut St2(State2);
 Serial pc(USBTX, USBRX, 115200);
 // ######## END - Debug ########
 
-#define F_OSC 16000000
-#define TIME_QUANTA_S 1.00
+// #define F_OSC 16000000
+#define TIME_QUANTA_S 1.01
 // #define TIME_QUANTA_S (2 / F_OSC)
 // #define BIT_RATE 500000
 
@@ -68,13 +68,13 @@ void bitTimingSM(){
   // Debug
   Tog = !Tog;
   pc.printf("State: %d, Count: %d, Wrt: %d, Sample: %d\n", state, count, wrt_pt, sample_pt);
-  // 
+  // End - Debug
   switch(state){
     case SYNC_ST:
-      // Debug
+    // Debug
       led1 = St1 = 0;
       led2 = St2 = 0;
-      //
+    // End - Debug
       count++;
       wrt_pt = 1;
       if(count == 1){
@@ -83,10 +83,10 @@ void bitTimingSM(){
       }
     break;
     case PHASE1_ST:
-      // Debug
+    // Debug
       led1 = St1 = 1;
       led2 = St2 = 0;
-      //
+    // End - Debug
       wrt_pt = 0;
       sample_pt = 0;
       if(hard_sync){
@@ -106,10 +106,10 @@ void bitTimingSM(){
       }
       break;
     case PHASE2_ST:
-      // Debug
+    // Debug
       led1 = St1 = 0;
       led2 = St2 = 1;
-      //
+    // End - Debug
       wrt_pt = 0;
       sample_pt = 0;
       if(hard_sync){
@@ -147,20 +147,29 @@ void bitTimingSM(){
 
 
 int main() {
+// Debug
   Tog = 1;
+  St1 = 0;
+  St2 = 0;
+  Har = 0;
+  Sof = 0;
+// End - Debug
+
   RX.fall(&edgeDetector);
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
   
 
   while(1) {
-    // Debug
+  // Debug
     Har = hard_sync;
     Sof = soft_sync;
     if(BT){
       idle = !idle;
       led3 = idle;
       wait(0.3);
+      while(BT);
     }
-    // End Debug
+    // pc.printf("%d %d %d %d %d\n", Tog.read() * 10, St2.read() + 4, St1.read() + 6, hard_sync+2, soft_sync+1);
+  // End Debug
   }
 }
