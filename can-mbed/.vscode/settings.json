@@ -2,5 +2,9 @@
     "terminal.integrated.env.osx": {
         "PATH": "/Users/cavalcanti/.platformio/penv/bin:/Users/cavalcanti/.platformio/penv:/Applications/anaconda3/bin:/usr/local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:/Users/cavalcanti/go/bin:/usr/local/sbin",
         "PLATFORMIO_CALLER": "vscode"
+    },
+    "terminal.integrated.env.linux": {
+        "PATH": "/home/robocin/.platformio/penv/bin:/home/robocin/.platformio/penv:/home/robocin/.local/bin:/home/robocin/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games",
+        "PLATFORMIO_CALLER": "vscode"
     }
 }
