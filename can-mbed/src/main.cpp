@@ -48,6 +48,15 @@ enum  states {
   PHASE2_ST
 } states;
 
+enum  states1 {
+  START = 0,
+  COUNT_0,
+  COUNT_1,
+  ERROR
+} states1;
+
+
+
 void edgeDetector(){
   if (idle)
   {
@@ -144,6 +153,117 @@ void bitTimingSM(){
   }
 }
 
+void bitstuffREAD()
+{
+  static int count = 0;
+  static int state = 0;
+
+  switch(state)
+  {
+    case(START):
+      // RX_bit = RX;
+      // rd_pt == CLK
+      //Implementar stuff_en == 0
+
+      if(RX == 0 && stuff_en)
+      {
+        count++;
+        RX_bit = 0;
+        rd_pt = 1;
+        state = COUNT_0;
+      }
+      else if(RX == 1 && stuff_en)
+      {
+        count++;
+        RX_bit = 1;
+        rd_pt = 1;
+        state = COUNT_1;
+      }
+      break;
+
+    case(COUNT_0):
+      rd_pt = 0;
+
+      if(!stuff_en)
+      {
+        count = 0;
+        RX_bit = RX;
+        rd_pt = 1;
+        state = START;
+      }
+      else if(RX == 0 && stuff_en)
+      {
+        count ++;
+        RX_bit = RX;
+        rd_pt = 1;
+      }
+      else if(RX == 1 && count != 5)
+      {
+        count = 0;
+        RX_bit = RX;
+        rd_pt = 1;
+        state = COUNT_1;
+      }
+      else if(RX == 1 && count == 5)
+      {
+        count = 0;
+        RX_bit = RX;
+        state = COUNT_1;
+      }
+      else if(RX == 0 && count == 5 && stuff_en)
+      {
+        stuff_error = 1;
+        rd_pt = 1;
+        state = ERROR;
+      }
+      break;
+
+    case(COUNT_1):
+      rd_pt = 0;
+
+      if(!stuff_en)
+      {
+        count = 0;
+        RX_bit = RX;
+        rd_pt = 1;
+        state = START;
+      }
+      else if(RX == 1 && stuff_en)
+      {
+        count ++;
+        RX_bit = RX;
+        rd_pt = 1;
+      }
+      else if(RX == 0 && count != 5)
+      {
+        count = 0;
+        RX_bit = RX;
+        rd_pt = 1;
+        state = COUNT_0;
+      }
+      else if(RX == 0 && count == 5)
+      {
+        count = 0;
+        RX_bit = RX;
+        state = COUNT_0;
+      }
+      else if(RX == 1 && count == 5 && stuff_en)
+      {
+        rd_pt = 1;
+        stuff_error = 1;
+        state = ERROR;
+      }
+      break;
+
+    case(ERROR):
+      stuff_error = 0;
+      count = 0;
+      RX_bit = RX;
+      rd_pt = 1;
+      state = START;
+      break;
+  }
+}
 
 
 int main() {
