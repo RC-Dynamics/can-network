@@ -1,7 +1,5 @@
 #include <mbed.h>
 
-
-// ######## INIT - Debug ########
 #define PIN_TX D9
 #define PIN_RX D8
 #define PIN_SP D7
@@ -9,13 +7,9 @@
 #define PIN_WRT D5
 #define PIN_WRT_PT D3
 
-#define State2 D4
-
 DigitalIn BT(BUTTON1);
 
-
 Serial pc(USBTX, USBRX, 115200);
-// ######## END - Debug ########
 
 // #define F_OSC 16000000
 #define TIME_QUANTA_S 1.00
@@ -28,27 +22,43 @@ Serial pc(USBTX, USBRX, 115200);
 #define PHASE_SEG1 7
 #define PHASE_SEG2 7
 
-bool RX_bit = 0;
-bool TX_bit = 0;
-bool stuff_en = 0;
-bool stuff_error = 0;
 bool hard_sync = 0;
 bool soft_sync = 0;
 bool idle = 0;
 
+// BitStuffing <-> Timing
+bool RX_bit = 0;
+bool TX_bit = 0;
+
+// BitStuffing <-> 
+bool stuff_en = 0;
+bool stuff_error = 0;
+
+
+bool arbitration_area = 0;
+bool arbitration_lost = 0;
+bool bit_error = 0;
+bool writing_flag = 0;
+
 InterruptIn RX(PIN_RX);
 DigitalOut TX(PIN_TX);
 
+// Bit Timing -> Bit Stuffing
 DigitalOut sample_pt(PIN_SP);
 InterruptIn sample_pt_int(PIN_SP);
 
-DigitalOut wrt_pt(PIN_WRT);
-InterruptIn wrt_pt_int(PIN_WRT);
+// Bit Timing -> Bit Stuffing
+DigitalOut wrt_sp_pt(PIN_WRT);
+InterruptIn wrt_sp_pt_int(PIN_WRT);
 
+// Bit Stuffing -> Arbitration + Decoder
+DigitalOut read_pt(PIN_RD_PT);
+InterruptIn read_pt_int(PIN_RD_PT);
+
+// Bit Stuffing -> Encoder 
 DigitalOut write_pt(PIN_WRT_PT);
 InterruptIn write_pt_int(PIN_WRT_PT);
 
-DigitalOut read_pt(PIN_RD_PT);
 
 Ticker tq_clock;
 
@@ -86,14 +96,14 @@ void bitTimingSM(){
   switch(state){
     case SYNC_ST:
       count++;
-      wrt_pt = 1;
+      wrt_sp_pt = 1;
       if(count == 1){
         state = PHASE1_ST;
         count = 0;
       }
     break;
     case PHASE1_ST:
-      wrt_pt = 0;
+      wrt_sp_pt = 0;
       sample_pt = 0;
       if(hard_sync){
         hard_sync = 0;
@@ -112,19 +122,19 @@ void bitTimingSM(){
       }
       break;
     case PHASE2_ST:
-      wrt_pt = 0;
+      wrt_sp_pt = 0;
       sample_pt = 0;
       if(hard_sync){
         hard_sync = 0;
         count = 0;
         state = PHASE1_ST;
-        wrt_pt = 1;
+        wrt_sp_pt = 1;
         break;
       } else if (soft_sync && (SJW > PHASE_SEG2 - count)){
         count = 0;
         soft_sync = 0;
         state = PHASE1_ST;
-        wrt_pt = 1;
+        wrt_sp_pt = 1;
         break;
       } else if (soft_sync && PHASE_SEG2 - count == SJW){
         count = 0;
@@ -201,7 +211,6 @@ void bitstuffREAD()
   read_pt = 0;
 }
 
-<<<<<<< HEAD
 void bitstuffWRITE()
 {
   static int count = 0;
@@ -252,28 +261,47 @@ void bitstuffWRITE()
   }
   write_pt = 0;
 }
-=======
-// void arbitration()
-// {
-//   if(writing_flag && arbitration_area && RX_bit != TX_bit)
-//   {
-//     arbitration_lost = 1;
-//   }
-//   else if (writing_flag && !arbitration_area && RX_bit != TX_bit)
-//   {
-//     bit_error = 1;
-//   }
-//   arbitration_lost = 0;
-//   bit_error = 0;
-// }
 
->>>>>>> addded arbitration
+void arbitration()
+{
+  if(writing_flag && arbitration_area && RX_bit != TX_bit)
+  {
+    arbitration_lost = 1;
+  }
+  else if (writing_flag && !arbitration_area && RX_bit != TX_bit)
+  {
+    bit_error = 1;
+  }
+  arbitration_lost = 0;
+  bit_error = 0;
+}
+
+void decoder(){
+  static int state = 0;
+
+  switch(){
+    
+  }
+}
+
+void encoder(){
+
+}
 
 int main() {
+  
   RX.fall(&edgeDetector);
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
+  
   sample_pt_int.rise(&bitstuffREAD);
-  write_pt_int.rise(&bitstuffWRITE);
+  wrt_sp_pt_int.rise(&bitstuffWRITE);
+
+  read_pt_int.rise(&arbitration);
+  read_pt_int.rise(&decoder);
+
+  write_pt_int.rise(&encoder);
+
+
   
 
   while(1) {
