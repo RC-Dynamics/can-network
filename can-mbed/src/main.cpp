@@ -201,6 +201,7 @@ void bitstuffREAD()
   read_pt = 0;
 }
 
+<<<<<<< HEAD
 void bitstuffWRITE()
 {
   static int count = 0;
@@ -251,6 +252,22 @@ void bitstuffWRITE()
   }
   write_pt = 0;
 }
+=======
+// void arbitration()
+// {
+//   if(writing_flag && arbitration_area && RX_bit != TX_bit)
+//   {
+//     arbitration_lost = 1;
+//   }
+//   else if (writing_flag && !arbitration_area && RX_bit != TX_bit)
+//   {
+//     bit_error = 1;
+//   }
+//   arbitration_lost = 0;
+//   bit_error = 0;
+// }
+
+>>>>>>> addded arbitration
 
 int main() {
   RX.fall(&edgeDetector);
