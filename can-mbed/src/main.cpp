@@ -2,12 +2,13 @@
 
 
 // ######## INIT - Debug ########
+#define PIN_TX D9
 #define PIN_RX D8
 #define PIN_SP D7
 #define PIN_RD_PT D6
+#define PIN_WRT D5
+#define PIN_WRT_PT D3
 
-#define SoftSync D5
-#define State1 D3
 #define State2 D4
 
 DigitalIn BT(BUTTON1);
@@ -28,18 +29,24 @@ Serial pc(USBTX, USBRX, 115200);
 #define PHASE_SEG2 7
 
 bool RX_bit = 0;
+bool TX_bit = 0;
 bool stuff_en = 0;
 bool stuff_error = 0;
 bool hard_sync = 0;
 bool soft_sync = 0;
 bool idle = 0;
-bool wrt_pt = 1;
-
 
 InterruptIn RX(PIN_RX);
+DigitalOut TX(PIN_TX);
 
 DigitalOut sample_pt(PIN_SP);
 InterruptIn sample_pt_int(PIN_SP);
+
+DigitalOut wrt_pt(PIN_WRT);
+InterruptIn wrt_pt_int(PIN_WRT);
+
+DigitalOut write_pt(PIN_WRT_PT);
+InterruptIn write_pt_int(PIN_WRT_PT);
 
 DigitalOut read_pt(PIN_RD_PT);
 
@@ -194,11 +201,62 @@ void bitstuffREAD()
   read_pt = 0;
 }
 
+void bitstuffWRITE()
+{
+  static int count = 0;
+  static int state = 0;
+  static int last_tx = TX_bit;
+
+  last_tx = TX;
+  switch(state)
+  {
+    case(START):
+      TX = TX_bit;
+      write_pt = 1;
+      if(stuff_en)
+      {
+        count++;
+        state = COUNT;
+      }
+      break;
+
+    case(COUNT):
+      if(!stuff_en)
+      {
+        count = 0;
+        TX = TX_bit;
+        write_pt = 1;
+        state = START;
+      }
+      else if(count == 5 && TX_bit == last_tx) // STUFF
+      {
+        TX = !TX_bit;
+        count = 0;
+        state = START;
+      }
+      else if(TX_bit == last_tx)
+      {
+        count++;
+        TX = TX_bit;
+        write_pt = 1;
+      }
+      else if(TX_bit != last_tx && count != 5)
+      {
+        count = 0;
+        TX = TX_bit;
+        write_pt = 1;
+        state = START;
+      }
+      break;
+  }
+  write_pt = 0;
+}
 
 int main() {
   RX.fall(&edgeDetector);
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
   sample_pt_int.rise(&bitstuffREAD);
+  write_pt_int.rise(&bitstuffWRITE);
   
 
   while(1) {
