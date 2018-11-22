@@ -22,6 +22,25 @@ Serial pc(USBTX, USBRX, 115200);
 #define PHASE_SEG1 7
 #define PHASE_SEG2 7
 
+typedef struct
+{
+  bool SOF;
+  uint16_t ID;
+  bool SRR;
+  bool IDE;
+  bool R0;
+  uint32_t IDB;
+  bool R1;
+  bool R2;
+  uint8_t DLC;
+  uint64_t DATA;
+  uint16_t CRC_V;
+  bool CRC_D;
+  bool ACK_S;
+  bool ACK_D;
+  uint8_t EOF;
+} CAN_FRAME;
+
 bool hard_sync = 0;
 bool soft_sync = 0;
 bool idle = 0;
@@ -33,6 +52,9 @@ bool TX_bit = 0;
 // BitStuffing <-> 
 bool stuff_en = 0;
 bool stuff_error = 0;
+
+// Decoder
+CAN_FRAME frame;
 
 
 bool arbitration_area = 0;
@@ -72,6 +94,30 @@ enum  states_bit_stuffing {
   START = 0,
   COUNT
 } states_bit_stuffing;
+
+enum states_decoder
+{
+  IDLE = 0,
+  ID,
+  SRR,
+  IDE,
+  R0,
+  IDB,
+  R1,
+  R2,
+  DLC,
+  DATA,
+  CRC_V,
+  CRC_D,
+  ACK_S,
+  ACK_D,
+  EOF,
+  INTERFRAME,
+  OVERLOAD,
+  OVERLOAD_D,
+  ERROR,
+  ERROR_D
+} states_decoder;
 
 
 
@@ -278,15 +324,40 @@ void arbitration()
 
 void decoder(){
   static int state = 0;
-
-  switch(){
-    
+  static int bit_cnt = 0;
+  bool bit = RX_bit;
+  switch(state)
+  {
+    case(IDLE):
+      if(bit == 0)
+      {
+        frame.SOF = bit;
+        bit_cnt = 0;
+        frame.ID = 0;
+        CRC_en = 1;
+        //idle
+        state = ID;
+      }
+    break;
+    case(ID):
+      frame.ID << 1;
+      frame.ID = frame.ID ^ bit;
+      bit_cnt++;
+      if(bit_cnt == 11)   
+        {
+         state = SRR;
+        }
+    break;  
+    case(SRR):
+      frame.RTR = bit;
+      state = IDE;
+    break;
   }
 }
 
-void encoder(){
+// void encoder(){
 
-}
+// }
 
 int main() {
   
@@ -297,9 +368,9 @@ int main() {
   wrt_sp_pt_int.rise(&bitstuffWRITE);
 
   read_pt_int.rise(&arbitration);
-  read_pt_int.rise(&decoder);
+  // read_pt_int.rise(&decoder);
 
-  write_pt_int.rise(&encoder);
+  // write_pt_int.rise(&encoder);
 
 
   
