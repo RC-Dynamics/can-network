@@ -22,11 +22,12 @@ Serial pc(USBTX, USBRX, 115200);
 #define PHASE_SEG1 7
 #define PHASE_SEG2 7
 
-typedef struct
+typedef struct CAN_FRAME
 {
   bool SOF;
   uint16_t ID;
   bool SRR;
+  bool RTR;
   bool IDE;
   bool R0;
   uint32_t IDB;
@@ -38,7 +39,7 @@ typedef struct
   bool CRC_D;
   bool ACK_S;
   bool ACK_D;
-  uint8_t EOF;
+  uint8_t EOFRAME;
 } CAN_FRAME;
 
 bool hard_sync = 0;
@@ -55,6 +56,7 @@ bool stuff_error = 0;
 
 // Decoder
 CAN_FRAME frame;
+uint16_t CRC_CALC = 0;
 
 bool CRC_en;
 bool TX_decod;
@@ -104,6 +106,7 @@ enum states_decoder
   IDLE = 0,
   ID,
   SRR,
+  RTR,
   IDE,
   R0,
   IDB,
@@ -115,11 +118,11 @@ enum states_decoder
   CRC_D,
   ACK_S,
   ACK_D,
-  EOF,
+  EOFRAME,
   INTERFRAME,
   OVERLOAD,
   OVERLOAD_D,
-  ERROR,
+  ERROR_FLAG,
   ERROR_D
 } states_decoder;
 
@@ -333,19 +336,19 @@ void decoder(){
   switch(state)
   {
     case(IDLE):
+      idle = 1;
       if(bit == 0)
       {
         frame.SOF = bit;
         bit_cnt = 0;
         frame.ID = 0;
         CRC_en = 1;
-        //idle
+        stuff_en = 1;
         state = ID;
       }
     break;
     case(ID):
-      frame.ID << 1;
-      frame.ID = frame.ID ^ bit;
+      frame.ID = (frame.ID << 1) ^ bit;
       bit_cnt++;
       if(bit_cnt == 11)   
         {
@@ -370,10 +373,10 @@ void decoder(){
         state = IDB;
       }
       else if(bit == 1 && frame.RTR == 1)
-      {
+      { // OLHAR ENCODER
         TX_decod = 0;
         TX_en = 1;
-        state = ERROR;
+        state = ERROR_FLAG;
       }
     break;
     case(R0):
@@ -382,8 +385,7 @@ void decoder(){
       state = DLC;
     break;
     case(IDB):
-      frame.IDB << 1;
-      frame.IDB = frame.IDB ^ bit;
+      frame.IDB = (frame.IDB << 1) ^ bit;
       bit_cnt++;
       if(bit_cnt == 18)
       {
@@ -404,13 +406,12 @@ void decoder(){
       bit_cnt = 0;
     break;
     case(DLC):
-      frame.DLC << 1;
-      frame.DLC = frame.DLC ^ bit;
+      frame.DLC = (frame.DLC << 1) ^ bit;
       bit_cnt++;
       if(bit_cnt == 4)
       {
         bit_cnt = 0;
-        frame.CRC = 0;
+        frame.CRC_V = 0;
         if(frame.DLC >=8)
         {
           frame.DLC = 8;
@@ -430,10 +431,9 @@ void decoder(){
       }
     break;
     case(DATA):
-      frame.DATA << 1;
-      frame.DATA = frame.DATA ^ bit;
+      frame.DATA = (frame.DATA << 1) ^ bit;
       bit_cnt++;
-      if(bit_cnt == (frame.DATA * 8))
+      if(bit_cnt == (frame.DLC * 8))
       {
         bit_cnt = 0;
         CRC_en = 0;
@@ -441,16 +441,17 @@ void decoder(){
       } 
     break;
     case(CRC_V):
-      frame.CRC_V << 1;
-      frame.CRC_V = frame.CRC_V ^ bit;
+      frame.CRC_V = (frame.CRC_V << 1) ^ bit;
+      bit_cnt++;
       if(bit_cnt == 15)
       {
+        stuff_en = 0;
         state = CRC_D;
       }
     break;
     case(CRC_D):
       frame.CRC_D = bit;
-      TX_decod = 0;
+      TX_decod = 0; // OLHAR ENCODER
       if(bit == 1)
       {
         state = ACK_S;
@@ -459,30 +460,34 @@ void decoder(){
       {
         TX_en = 1;
         bit_cnt = 0;
-        state = ERROR;
+        state = ERROR_FLAG;
       }
     break;
     case(ACK_S):
       frame.ACK_S = bit;
-      TX_decod = 1;
+      TX_decod = 1; // OLHAR ENCODER
+      TX_en = 1;
       state = ACK_D;
     break;
     case(ACK_D):
+    TX_en = 0;
     frame.ACK_D = bit;
-      if(frame.CRC != CRC_CALC || bit == 0)
+      if(frame.CRC_V != CRC_CALC || bit == 0)
       {
         bit_cnt = 0;
-        TX_decod = 0;
+        TX_decod = 0; // OLHAR ENCODER
         TX_en = 1;
-        state = ERROR;
+        state = ERROR_FLAG;
       }
       else if(bit == 1)
       {
         bit_cnt = 0;
-        state = EOF;
+        frame.EOFRAME = 0;
+        state = EOFRAME;
       }
     break;
-    case(EOF):
+    case(EOFRAME):
+      frame.EOFRAME = (frame.EOFRAME << 1) ^ bit;
       bit_cnt++;
       if(bit == 1 && bit_cnt == 7)
       {
@@ -492,9 +497,9 @@ void decoder(){
       else if(bit == 0)
       {
         bit_cnt = 0;
-        TX_decod = 0;
+        TX_decod = 0; // OLHAR ENCODER
         TX_en = 1;
-        state = ERROR;
+        state = ERROR_FLAG;
       }
     break;
     case(INTERFRAME):
@@ -502,6 +507,7 @@ void decoder(){
       if(bit == 0)
       {
         TX_decod = 0;
+        TX_en = 1; // OLHAR ENCODER
         bit_cnt = 0;
         state = OVERLOAD;
       }
@@ -515,7 +521,8 @@ void decoder(){
       if(bit_cnt == 6)
       {
         bit_cnt = 0;
-        TX_decod = 1;
+        TX_decod = 1; // OLHAR ENCODER
+        TX_en = 0;
         state = OVERLOAD_D;
       }
     break;
@@ -523,7 +530,7 @@ void decoder(){
       bit_cnt++;
       if(bit == 0)
       {
-        bit_cnt = 1; // duvida nesse valor
+        bit_cnt = 1;
       }
       else if (bit_cnt == 8)
       {
@@ -531,20 +538,20 @@ void decoder(){
         state = INTERFRAME;
       }
     break;
-    case(ERROR):
+    case(ERROR_FLAG):
       bit_cnt++;
-      if(bit_cnt == 6)
+      if(bit_cnt == 5)
       {
             bit_cnt = 0;
             TX_decod = 1; 
             state = ERROR_D;
       }
     break;
-    case(ERROR_D)
+    case(ERROR_D):
       bit_cnt++;
       if(bit == 0)
       {
-        bit_cnt = 1; // duvida nesse valor
+        bit_cnt = 1;
       }
       else if (bit_cnt == 8)
       {
