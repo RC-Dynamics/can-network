@@ -56,6 +56,10 @@ bool stuff_error = 0;
 // Decoder
 CAN_FRAME frame;
 
+bool CRC_en;
+bool TX_decod;
+bool TX_en;
+
 
 bool arbitration_area = 0;
 bool arbitration_lost = 0;
@@ -352,6 +356,99 @@ void decoder(){
       frame.RTR = bit;
       state = IDE;
     break;
+    case(IDE):
+      frame.IDE = bit;
+      bit_cnt = 0;
+      if(bit == 0) 
+      {
+        state = R0;
+      }
+      else if(bit == 1 && frame.RTR == 0) 
+      {
+        frame.SRR = frame.RTR;
+        frame.IDB = 0;
+        state = IDB;
+      }
+      else if(bit == 1 && frame.RTR == 1)
+      {
+        TX_decod = 0;
+        TX_en = 1;
+        state = ERROR;
+      }
+    break;
+    case(R0):
+      frame.R0 = bit;
+      frame.DLC = 0;
+      state = DLC;
+    break;
+    case(IDB):
+      frame.IDB << 1;
+      frame.IDB = frame.IDB ^ bit;
+      bit_cnt++;
+      if(bit_cnt == 18)
+      {
+        state = RTR;
+      }
+    break;
+    case(RTR):
+      frame.RTR = bit;
+      state = R1;
+    break;
+    case(R1):
+      frame.R1 = bit;
+      state = R2;
+    break;
+    case(R2):
+      frame.R2 = bit;
+      frame.DLC = 0;
+      bit_cnt = 0;
+    break;
+    case(DLC):
+      frame.DLC << 1;
+      frame.DLC = frame.DLC ^ bit;
+      bit_cnt++;
+      if(bit_cnt == 4)
+      {
+        bit_cnt = 0;
+        frame.CRC = 0;
+        if(frame.DLC >=8)
+        {
+          frame.DLC = 8;
+        }
+        if(frame.RTR == 1 || frame.DLC == 0)
+        {
+          bit_cnt = 0;
+          CRC_en = 0;
+          state = CRC_V;
+        }
+        else if (RTR == 0)
+        {
+          frame.DATA = 0;
+          bit_cnt = 0;
+          state = DATA;
+        }
+      }
+    break;
+    state(DATA):
+      frame.DATA << 1;
+      frame.DATA = frame.DATA ^ bit;
+      bit_cnt++;
+      if(bit_cnt == (frame.DATA * 8))
+      {
+        bit_cnt = 0;
+        CRC_en = 0;
+        state = CRC_V;
+      } 
+    break;
+    state(CRC):
+      frame.CRC << 1;
+      frame.CRC = frame.CRC ^ bit;
+      if(bit_cnt == 15)
+      {
+        state = CRC_D;
+      }
+    break;
+      
   }
 }
 
