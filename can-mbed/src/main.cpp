@@ -429,7 +429,7 @@ void decoder(){
         }
       }
     break;
-    state(DATA):
+    case(DATA):
       frame.DATA << 1;
       frame.DATA = frame.DATA ^ bit;
       bit_cnt++;
@@ -440,15 +440,118 @@ void decoder(){
         state = CRC_V;
       } 
     break;
-    state(CRC):
-      frame.CRC << 1;
-      frame.CRC = frame.CRC ^ bit;
+    case(CRC_V):
+      frame.CRC_V << 1;
+      frame.CRC_V = frame.CRC_V ^ bit;
       if(bit_cnt == 15)
       {
         state = CRC_D;
       }
     break;
-      
+    case(CRC_D):
+      frame.CRC_D = bit;
+      TX_decod = 0;
+      if(bit == 1)
+      {
+        state = ACK_S;
+      }
+      else if(bit == 0)
+      {
+        TX_en = 1;
+        bit_cnt = 0;
+        state = ERROR;
+      }
+    break;
+    case(ACK_S):
+      frame.ACK_S = bit;
+      TX_decod = 1;
+      state = ACK_D;
+    break;
+    case(ACK_D):
+    frame.ACK_D = bit;
+      if(frame.CRC != CRC_CALC || bit == 0)
+      {
+        bit_cnt = 0;
+        TX_decod = 0;
+        TX_en = 1;
+        state = ERROR;
+      }
+      else if(bit == 1)
+      {
+        bit_cnt = 0;
+        state = EOF;
+      }
+    break;
+    case(EOF):
+      bit_cnt++;
+      if(bit == 1 && bit_cnt == 7)
+      {
+        bit_cnt = 0;
+        state = INTERFRAME;
+      }
+      else if(bit == 0)
+      {
+        bit_cnt = 0;
+        TX_decod = 0;
+        TX_en = 1;
+        state = ERROR;
+      }
+    break;
+    case(INTERFRAME):
+      bit_cnt++;
+      if(bit == 0)
+      {
+        TX_decod = 0;
+        bit_cnt = 0;
+        state = OVERLOAD;
+      }
+      else if(bit_cnt == 2)
+      {
+        state = IDLE;
+      }
+    break;
+    case(OVERLOAD):
+      bit_cnt++;
+      if(bit_cnt == 6)
+      {
+        bit_cnt = 0;
+        TX_decod = 1;
+        state = OVERLOAD_D;
+      }
+    break;
+    case(OVERLOAD_D):
+      bit_cnt++;
+      if(bit == 0)
+      {
+        bit_cnt = 1; // duvida nesse valor
+      }
+      else if (bit_cnt == 8)
+      {
+        bit_cnt = 0;
+        state = INTERFRAME;
+      }
+    break;
+    case(ERROR):
+      bit_cnt++;
+      if(bit_cnt == 6)
+      {
+            bit_cnt = 0;
+            TX_decod = 1; 
+            state = ERROR_D;
+      }
+    break;
+    case(ERROR_D)
+      bit_cnt++;
+      if(bit == 0)
+      {
+        bit_cnt = 1; // duvida nesse valor
+      }
+      else if (bit_cnt == 8)
+      {
+        bit_cnt = 0;
+        state = INTERFRAME;
+      }
+    break;
   }
 }
 
