@@ -35,6 +35,7 @@ typedef struct CAN_FRAME
   bool R2;
   uint8_t DLC;
   uint64_t DATA;
+  bool data_b = false;
   uint16_t CRC_V;
   bool CRC_D;
   bool ACK_S;
@@ -55,16 +56,17 @@ bool stuff_en = 0;
 bool stuff_error = 0;
 
 // Decoder
-CAN_FRAME frame;
+CAN_FRAME frame_recv;
+CAN_FRAME frame_send;
 uint16_t CRC_CALC = 0;
 
 bool CRC_en;
 bool TX_decod;
 bool TX_en;
+bool TX_ack;
 
+bool write_en;
 
-bool arbitration_area = 0;
-bool arbitration_lost = 0;
 bool bit_error = 0;
 bool writing_flag = 0;
 
@@ -123,9 +125,9 @@ enum states_decoder
   OVERLOAD,
   OVERLOAD_D,
   ERROR_FLAG,
-  ERROR_D
+  ERROR_D,
+  SOF
 } states_decoder;
-
 
 
 void edgeDetector(){
@@ -315,40 +317,48 @@ void bitstuffWRITE()
   write_pt = 0;
 }
 
-void arbitration()
+void calculateCRC(bool bit)
 {
-  if(writing_flag && arbitration_area && RX_bit != TX_bit)
-  {
-    arbitration_lost = 1;
+  if (CRC_en) {
+    CRC_CALC <<= 1;
+    if (CRC_CALC >= (1 << 15)) { // um smente no bit mais significativo
+      CRC_CALC ^= 0x4599;
+    }
+    CRC_CALC &= 0x7fff; // zero no bit mais significativo e um no resto
   }
-  else if (writing_flag && !arbitration_area && RX_bit != TX_bit)
-  {
-    bit_error = 1;
-  }
-  arbitration_lost = 0;
-  bit_error = 0;
 }
 
 void decoder(){
   static int state = 0;
   static int bit_cnt = 0;
   bool bit = RX_bit;
+  if(stuff_error || bit_error)
+  {
+    bit_cnt = 0;
+    TX_decod = 0;
+    TX_en = 1;
+    state = ERROR_FLAG;
+    stuff_error = 0;
+    bit_error = 0;
+  }
   switch(state)
   {
     case(IDLE):
       idle = 1;
       if(bit == 0)
       {
-        frame.SOF = bit;
+        frame_recv.SOF = bit;
         bit_cnt = 0;
-        frame.ID = 0;
+        frame_recv.ID = 0;
+        CRC_CALC = 0;
         CRC_en = 1;
-        stuff_en = 1;
+        stuff_en = 1; //
+        idle = 0;
         state = ID;
       }
     break;
     case(ID):
-      frame.ID = (frame.ID << 1) ^ bit;
+      frame_recv.ID = (frame_recv.ID << 1) ^ bit;
       bit_cnt++;
       if(bit_cnt == 11)   
         {
@@ -356,23 +366,23 @@ void decoder(){
         }
     break;  
     case(SRR):
-      frame.RTR = bit;
+      frame_recv.RTR = bit;
       state = IDE;
     break;
     case(IDE):
-      frame.IDE = bit;
+      frame_recv.IDE = bit;
       bit_cnt = 0;
       if(bit == 0) 
       {
         state = R0;
       }
-      else if(bit == 1 && frame.RTR == 0) 
+      else if(bit == 1 && frame_recv.RTR == 0) 
       {
-        frame.SRR = frame.RTR;
-        frame.IDB = 0;
+        frame_recv.SRR = frame_recv.RTR;
+        frame_recv.IDB = 0;
         state = IDB;
       }
-      else if(bit == 1 && frame.RTR == 1)
+      else if(bit == 1 && frame_recv.RTR == 1) // RTR = SRR
       { // OLHAR ENCODER
         TX_decod = 0;
         TX_en = 1;
@@ -380,12 +390,12 @@ void decoder(){
       }
     break;
     case(R0):
-      frame.R0 = bit;
-      frame.DLC = 0;
+      frame_recv.R0 = bit;
+      frame_recv.DLC = 0;
       state = DLC;
     break;
     case(IDB):
-      frame.IDB = (frame.IDB << 1) ^ bit;
+      frame_recv.IDB = (frame_recv.IDB << 1) ^ bit;
       bit_cnt++;
       if(bit_cnt == 18)
       {
@@ -393,55 +403,54 @@ void decoder(){
       }
     break;
     case(RTR):
-      frame.RTR = bit;
+      frame_recv.RTR = bit;
       state = R1;
     break;
     case(R1):
-      frame.R1 = bit;
+      frame_recv.R1 = bit;
       state = R2;
     break;
     case(R2):
-      frame.R2 = bit;
-      frame.DLC = 0;
+      frame_recv.R2 = bit;
+      frame_recv.DLC = 0;
       bit_cnt = 0;
     break;
     case(DLC):
-      frame.DLC = (frame.DLC << 1) ^ bit;
+      frame_recv.DLC = (frame_recv.DLC << 1) ^ bit;
       bit_cnt++;
       if(bit_cnt == 4)
       {
         bit_cnt = 0;
-        frame.CRC_V = 0;
-        if(frame.DLC >=8)
+        if(frame_recv.DLC >=8)
         {
-          frame.DLC = 8;
+          frame_recv.DLC = 8;
         }
-        if(frame.RTR == 1 || frame.DLC == 0)
+        if(frame_recv.RTR == 1 || frame_recv.DLC == 0)
         {
-          bit_cnt = 0;
           CRC_en = 0;
+          frame_recv.CRC_V = 0;
           state = CRC_V;
         }
         else if (RTR == 0)
         {
-          frame.DATA = 0;
-          bit_cnt = 0;
+          frame_recv.DATA = 0;
           state = DATA;
         }
       }
     break;
     case(DATA):
-      frame.DATA = (frame.DATA << 1) ^ bit;
+      frame_recv.DATA = (frame_recv.DATA << 1) ^ bit;
       bit_cnt++;
-      if(bit_cnt == (frame.DLC * 8))
+      if(bit_cnt == (frame_recv.DLC * 8))
       {
         bit_cnt = 0;
         CRC_en = 0;
+        frame_recv.CRC_V = 0;
         state = CRC_V;
       } 
     break;
     case(CRC_V):
-      frame.CRC_V = (frame.CRC_V << 1) ^ bit;
+      frame_recv.CRC_V = (frame_recv.CRC_V << 1) ^ bit;
       bit_cnt++;
       if(bit_cnt == 15)
       {
@@ -450,10 +459,11 @@ void decoder(){
       }
     break;
     case(CRC_D):
-      frame.CRC_D = bit;
+      frame_recv.CRC_D = bit;
       TX_decod = 0; // OLHAR ENCODER
       if(bit == 1)
       {
+        TX_ack = 1;
         state = ACK_S;
       }
       else if(bit == 0)
@@ -464,15 +474,13 @@ void decoder(){
       }
     break;
     case(ACK_S):
-      frame.ACK_S = bit;
+      frame_recv.ACK_S = bit;
       TX_decod = 1; // OLHAR ENCODER
-      TX_en = 1;
       state = ACK_D;
     break;
     case(ACK_D):
-    TX_en = 0;
-    frame.ACK_D = bit;
-      if(frame.CRC_V != CRC_CALC || bit == 0)
+    frame_recv.ACK_D = bit;
+      if(frame_recv.CRC_V != CRC_CALC || bit == 0)
       {
         bit_cnt = 0;
         TX_decod = 0; // OLHAR ENCODER
@@ -482,12 +490,12 @@ void decoder(){
       else if(bit == 1)
       {
         bit_cnt = 0;
-        frame.EOFRAME = 0;
+        frame_recv.EOFRAME = 0;
         state = EOFRAME;
       }
     break;
     case(EOFRAME):
-      frame.EOFRAME = (frame.EOFRAME << 1) ^ bit;
+      frame_recv.EOFRAME = (frame_recv.EOFRAME << 1) ^ bit;
       bit_cnt++;
       if(bit == 1 && bit_cnt == 7)
       {
@@ -522,7 +530,7 @@ void decoder(){
       {
         bit_cnt = 0;
         TX_decod = 1; // OLHAR ENCODER
-        TX_en = 0;
+        TX_en = 1;
         state = OVERLOAD_D;
       }
     break;
@@ -530,11 +538,12 @@ void decoder(){
       bit_cnt++;
       if(bit == 0)
       {
-        bit_cnt = 1;
+        bit_cnt = 0;
       }
       else if (bit_cnt == 8)
       {
         bit_cnt = 0;
+        TX_en = 0;
         state = INTERFRAME;
       }
     break;
@@ -542,29 +551,321 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 5)
       {
-            bit_cnt = 0;
-            TX_decod = 1; 
-            state = ERROR_D;
+        CRC_en = 0;
+        bit_cnt = 0;
+        TX_decod = 1; 
+        TX_en = 1;
+        state = ERROR_D;
       }
     break;
     case(ERROR_D):
       bit_cnt++;
       if(bit == 0)
       {
-        bit_cnt = 1;
+        bit_cnt = 0;
       }
       else if (bit_cnt == 8)
       {
         bit_cnt = 0;
+        TX_en = 0;
         state = INTERFRAME;
       }
     break;
   }
+  calculateCRC(bit);
 }
 
-// void encoder(){
+void encoder(){
+  static int state = 0;
+  static int bit_cnt = 0;
 
-// }
+  if(TX_en){
+    state = IDLE;
+  }
+  switch(state){
+    case IDLE:
+      if(TX_ack)
+      {
+        TX_bit = TX_decod;
+        TX_ack = 0;
+      }
+      else if(TX_en)
+      {
+        TX_bit = TX_decod;
+      }
+      else 
+      {
+        TX_bit = 1;
+      }
+      if(write_en){
+        TX_bit = frame_send.SOF;
+        stuff_en = 1;
+        state = SOF;
+        bit_cnt = 0;
+      }
+      break;
+
+    case SOF:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      TX_bit = (frame_send.ID >> (10-bit_cnt)) & 1;
+      bit_cnt++;
+      state = ID;
+      break;
+
+    case ID:
+      if(RX_bit != TX_bit) // ARBITRATION
+      {
+        state = IDLE;
+        TX_bit = 1;
+        break;
+      }
+      if(bit_cnt == 11){
+        TX_bit = frame_send.SRR;
+        state = SRR;
+      } else {
+        TX_bit = (frame_send.ID >> (10-bit_cnt)) & 1;
+        bit_cnt++;
+      }
+      break;
+
+    case SRR:
+      if(RX_bit != TX_bit) // ARBITRATION
+      {
+        state = IDLE;
+        TX_bit = 1;
+        break;
+      }
+      TX_bit = frame_send.IDE;
+      bit_cnt = 0;
+      state = IDE;
+      break;
+
+    case IDE:
+      if(frame_send.IDE == 1){
+        if(RX_bit != TX_bit) // ARBITRATION verifica se nao for extendido?
+        {
+          state = IDLE;
+          TX_bit = 1;
+          break;
+        }
+        TX_bit = (frame_send.IDB >> (17-bit_cnt)) & 1;
+        bit_cnt++;
+        state = IDB;
+      } else if(frame_send.IDE == 0){
+        if(RX_bit != TX_bit) // BIT_ERROR
+        {
+          state = IDLE;
+          TX_bit = 1;
+          bit_error = 1;
+          break;
+        }
+        TX_bit = frame_send.R0;
+        state = R0;
+      }
+      break;
+
+    case R0:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      TX_bit = (frame_send.DLC >> 3)&1;
+      bit_cnt = 1;
+      state = DLC;
+      break;
+
+    case IDB:
+      if(RX_bit != TX_bit) // ARBITRATION
+      {
+        state = IDLE;
+        TX_bit = 1;
+        break;
+      }
+      if(bit_cnt == 18){
+        TX_bit = frame_send.RTR;
+        state = RTR;
+      }else {
+        TX_bit = (frame_send.IDB >> (17-bit_cnt)) & 1;
+        bit_cnt++;
+      }
+      break;
+
+    case RTR:
+      if(RX_bit != TX_bit) // ARBITRATION
+      {
+        state = IDLE;
+        TX_bit = 1;
+        break;
+      }
+      TX_bit = frame_send.R1;
+      state = R1;
+      break;
+
+    case R1:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      TX_bit = frame_send.R2;
+      state = R2;
+      break;
+
+    case R2:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      bit_cnt = 0;
+      TX_bit = frame_send.DLC >> (3 - bit_cnt);
+      bit_cnt++;
+      break;
+
+    case DLC:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      if(bit_cnt == 4){
+        if(frame_send.RTR == 1){
+          CRC_en = 0;
+          bit_cnt = 1;
+          TX_bit = CRC_CALC >> (15 - bit_cnt);
+          state = CRC_V;
+        } else {
+          bit_cnt = 0;
+          TX_bit = (frame_send.DATA >> ((frame_send.DLC * 8) - bit_cnt - 1));
+          bit_cnt++;
+          state = DATA;
+        }
+      } else {
+        TX_bit = frame_send.DLC >> (3 - bit_cnt);
+        bit_cnt++;
+      }
+      
+      break;
+
+    case DATA:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      if(bit_cnt == frame_send.DLC * 8){
+        bit_cnt = 0;
+        TX_bit = CRC_CALC >> (14 - bit_cnt);
+        bit_cnt = 1;
+        state = CRC_V;
+      } else {
+        TX_bit = (frame_send.DATA >> ((frame_send.DLC * 8) - bit_cnt - 1));
+        bit_cnt++;
+      }
+      break;
+
+    case CRC_V:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      if(bit_cnt == 15){
+        stuff_en = 0;
+        TX_bit = frame_send.CRC_D;
+        state = CRC_D;
+      } else {
+        TX_bit = CRC_CALC >> (14 - bit_cnt);
+        bit_cnt++;
+      }
+      break;
+
+    case CRC_D:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      TX_bit = frame_send.ACK_S;
+      state = ACK_S;
+      break;
+
+    case ACK_S:
+      TX_bit = frame_send.ACK_D;
+      state = ACK_D;
+      break;
+
+    case ACK_D:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      bit_cnt = 0;
+      TX_bit = (frame_send.EOFRAME >> (6-bit_cnt) ) & 1;
+      bit_cnt++;
+      state = ACK_D;
+      break;
+
+    case EOFRAME:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      if(bit_cnt == 7){
+        TX_bit = 1;
+        bit_cnt = 0;
+      } else {
+        TX_bit = (frame_send.EOFRAME >> (6-bit_cnt) ) & 1;
+        bit_cnt++;
+      }
+      break;
+
+    case INTERFRAME:
+      if(RX_bit != TX_bit) //BIT_ERROR
+      {
+        state = IDLE;
+        TX_bit = 1;
+        bit_error = 1;
+        break;
+      }
+      if(bit_cnt == 2){
+        bit_cnt = 0;
+        state = IDLE;
+      } else {
+        TX_bit = 1;
+        bit_cnt++;
+      }
+      break;
+  }
+
+}
 
 int main() {
   
@@ -574,7 +875,7 @@ int main() {
   sample_pt_int.rise(&bitstuffREAD);
   wrt_sp_pt_int.rise(&bitstuffWRITE);
 
-  read_pt_int.rise(&arbitration);
+  // read_pt_int.rise(&arbitration);
   // read_pt_int.rise(&decoder);
 
   // write_pt_int.rise(&encoder);
