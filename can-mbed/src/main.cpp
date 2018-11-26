@@ -1,18 +1,34 @@
 #include <mbed.h>
 
-#define PIN_TX D9
-#define PIN_RX D8
-#define PIN_SP D7
-#define PIN_RD_PT D6
-#define PIN_WRT D5
-#define PIN_WRT_PT D3
+#define DEBUG
+#ifdef DEBUG
+#define debug(x) x
+#else
+#define debug(x)
+#endif
+
+#define PIN_RX_IN D2
+#define PIN_TX_OUT D3
+
+#define PIN_RX_OUT A0
+#define PIN_TX_IN A1
+
+#define PIN_SP_OUT D4
+#define PIN_RD_PT_OUT D5
+#define PIN_WRT_OUT D6
+#define PIN_WRT_PT_OUT D7
+
+#define PIN_SP_IN PF_2
+#define PIN_RD_PT_IN A3
+#define PIN_WRT_IN A4
+#define PIN_WRT_PT_IN A5
 
 DigitalIn BT(BUTTON1);
 
 Serial pc(USBTX, USBRX, 115200);
 
 // #define F_OSC 16000000
-#define TIME_QUANTA_S 1.00
+#define TIME_QUANTA_S 0.10
 // #define TIME_QUANTA_S (2 / F_OSC)
 // #define BIT_RATE 500000
 
@@ -60,6 +76,10 @@ CAN_FRAME frame_recv;
 CAN_FRAME frame_send;
 uint16_t CRC_CALC = 0;
 
+// Debug        
+bool frame[] = {1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+int frame_index = 0;
+
 bool CRC_en;
 bool TX_decod;
 bool TX_en;
@@ -70,27 +90,34 @@ bool write_en;
 bool bit_error = 0;
 bool writing_flag = 0;
 
-InterruptIn RX(PIN_RX);
-DigitalOut TX(PIN_TX);
+// DEBUG
+DigitalIn TX_IN(PIN_TX_IN);
+DigitalOut RX_OUT(PIN_RX_OUT);
+
+
+// INTERFACES
+InterruptIn RX(PIN_RX_IN);
+DigitalOut TX(PIN_TX_OUT);
 
 // Bit Timing -> Bit Stuffing
-DigitalOut sample_pt(PIN_SP);
-InterruptIn sample_pt_int(PIN_SP);
+DigitalOut sample_pt(PIN_SP_OUT);
+InterruptIn sample_pt_int(PIN_SP_IN);
 
 // Bit Timing -> Bit Stuffing
-DigitalOut wrt_sp_pt(PIN_WRT);
-InterruptIn wrt_sp_pt_int(PIN_WRT);
+DigitalOut wrt_sp_pt(PIN_WRT_OUT);
+InterruptIn wrt_sp_pt_int(PIN_WRT_IN);
 
 // Bit Stuffing -> Arbitration + Decoder
-DigitalOut read_pt(PIN_RD_PT);
-InterruptIn read_pt_int(PIN_RD_PT);
+DigitalOut read_pt(PIN_RD_PT_OUT);
+InterruptIn read_pt_int(PIN_RD_PT_IN);
 
 // Bit Stuffing -> Encoder 
-DigitalOut write_pt(PIN_WRT_PT);
-InterruptIn write_pt_int(PIN_WRT_PT);
+DigitalOut write_pt(PIN_WRT_PT_OUT);
+InterruptIn write_pt_int(PIN_WRT_PT_IN);
 
 
 Ticker tq_clock;
+
 
 enum  states_bit_timing {
   SYNC_ST = 0,
@@ -103,7 +130,7 @@ enum  states_bit_stuffing {
   COUNT
 } states_bit_stuffing;
 
-enum states_decoder
+enum states_coder
 {
   IDLE = 0,
   ID,
@@ -127,7 +154,79 @@ enum states_decoder
   ERROR_FLAG,
   ERROR_D,
   SOF
-} states_decoder;
+} states_coder;
+
+char* print_state(int st){
+  switch(st){
+    case IDLE:
+      return  "IDLE";
+    break;
+    case ID:
+      return "ID"; 
+    break;
+    case SRR:
+      return "SRR"; 
+    break;
+    case RTR:
+      return "RTR"; 
+    break;
+    case IDE:
+      return "IDE"; 
+    break;
+    case R0:
+      return "R0"; 
+    break;
+    case IDB:
+      return "IDB"; 
+    break;
+    case R1:
+      return "R1"; 
+    break;
+    case R2:
+      return "R2"; 
+    break;
+    case DLC:
+      return "DLC"; 
+    break;
+    case DATA:
+      return  "DATA";
+    break;
+    case CRC_V:
+      return  "CRC_V";
+    break;
+    case CRC_D:
+      return  "CRC_D";
+    break;
+    case ACK_S:
+      return  "ACK_S";
+    break;
+    case ACK_D:
+      return  "ACK_D";
+    break;
+    case EOFRAME:
+      return  "EOFRAME";
+    break;
+    case INTERFRAME:
+      return  "INTERFRAME";
+    break;
+    case OVERLOAD:
+      return  "OVERLOAD";
+    break;
+    case OVERLOAD_D:
+      return  "OVERLOAD_D";
+    break;
+    case ERROR_FLAG:
+      return  "ERROR_FLAG";
+    break;
+    case ERROR_D:
+      return  "ERROR_D";
+    break;
+    case SOF:
+      return "SOF"; 
+    break;
+  }
+
+}
 
 
 void edgeDetector(){
@@ -141,13 +240,16 @@ void edgeDetector(){
     hard_sync = 0;
     soft_sync = 1;
   }
-  pc.printf("Soft: %d, Hard: %d\n", soft_sync, hard_sync);
+  debug(pc.printf("Edge: Soft: %d, Hard: %d\n", soft_sync, hard_sync));
 }
 
 void bitTimingSM(){
   static int state = PHASE1_ST;
   static int count = 0;
-  // pc.printf("State: %d, Count: %d, Wrt: %d, Sample: %d\n", state, count, wrt_pt, sample_pt);
+
+  // if(wrt_sp_pt_int.read() || sample_pt_int.read())
+    // debug(pc.printf("--> Timing: State: %d, Count: %d, Wrt: %d, Sample: %d\n", state, count, wrt_sp_pt_int.read(), sample_pt_int.read()));
+
   switch(state){
     case SYNC_ST:
       count++;
@@ -215,14 +317,25 @@ void bitstuffREAD()
 {
   static int count = 0;
   static int state = 0;
-  static int last_rx = RX;
-
+  static int last_rx;
+  
+  // debug(pc.printf("Stuff READ: status: %s - stuff_en: %d - error: %d - read_pt: %d - count: %d\n", (state==0)?"START":"COUNT", stuff_en, stuff_error, read_pt_int.read(), count));
+  
+  read_pt = 0;
   last_rx = RX_bit;
-  RX_bit = RX;
+  
+  RX_bit = frame[frame_index];
+  
+  debug(pc.printf("RX_bit: %d\n", RX_bit));
+
+  frame_index++;
+  if(frame_index >= sizeof(frame)/sizeof(bool))
+    frame_index = 0;
 
   switch(state)
   {
     case(START):
+      stuff_error = 0;
       read_pt = 1;
       if(stuff_en)
       {
@@ -235,6 +348,7 @@ void bitstuffREAD()
       if(RX == last_rx && count == 5 && stuff_en)
       {
         stuff_error = 1;
+        count = 0;
         read_pt = 1;
         state = START;
       } else {
@@ -263,14 +377,17 @@ void bitstuffREAD()
       }
       break;
   }
-  read_pt = 0;
 }
 
 void bitstuffWRITE()
 {
   static int count = 0;
   static int state = 0;
-  static int last_tx = TX_bit;
+  static int last_tx;
+  
+  // debug(pc.printf("Stuff WRITE: status: %s - stuff_en: %d - wrt_pt: %d - count: %d\n", (state==0)?"START":"COUNT", stuff_en, write_pt_int.read(), count));
+
+  write_pt = 0;
 
   last_tx = TX;
   switch(state)
@@ -314,7 +431,6 @@ void bitstuffWRITE()
       }
       break;
   }
-  write_pt = 0;
 }
 
 void calculateCRC(bool bit)
@@ -331,6 +447,8 @@ void calculateCRC(bool bit)
 void decoder(){
   static int state = 0;
   static int bit_cnt = 0;
+
+
   bool bit = RX_bit;
   if(stuff_error || bit_error)
   {
@@ -868,27 +986,26 @@ void encoder(){
 }
 
 int main() {
-  
+  RX_OUT = 0; // Debug
+
   RX.fall(&edgeDetector);
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
   
   sample_pt_int.rise(&bitstuffREAD);
-  wrt_sp_pt_int.rise(&bitstuffWRITE);
+  // wrt_sp_pt_int.rise(&bitstuffWRITE);
 
   // read_pt_int.rise(&arbitration);
   // read_pt_int.rise(&decoder);
 
   // write_pt_int.rise(&encoder);
 
-
-  
-
   while(1) {
     if(BT){
       idle = !idle;
+      stuff_en = !stuff_en;
       wait(0.3);
       while(BT);
     }
-    // pc.printf("%d %d %d %d %d\n", Tog.read() * 10, St2.read() + 4, St1.read() + 6, hard_sync+2, soft_sync+1);
+
   }
 }
