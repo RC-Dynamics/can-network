@@ -74,10 +74,18 @@ bool stuff_error = 0;
 // Decoder
 CAN_FRAME frame_recv;
 CAN_FRAME frame_send;
-uint16_t CRC_CALC = 0;
+int CRC_CALC = 0;
 
 // Debug        
-bool frame[] = {1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+// Frame Wikipedia Original
+// bool frame[] = {1,1,1,1,0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,1,1,0,0,0,0,0,1,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1};
+// Frame Wikipedia sem bit stuff
+// bool frame[] = {0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1};
+// Frame crc certo
+bool frame[] = {0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1};
+// Frame crc ext certo
+// bool frame[] = {0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1};
+
 int frame_index = 0;
 
 bool CRC_en;
@@ -441,10 +449,16 @@ void calculateCRC(bool bit)
 {
   if (CRC_en) {
     CRC_CALC <<= 1;
-    if (CRC_CALC >= (1 << 15)) { // um smente no bit mais significativo
+    if ((CRC_CALC >= (1 << 15)) ^ bit) { // um smente no bit mais significativo
       CRC_CALC ^= 0x4599;
     }
     CRC_CALC &= 0x7fff; // zero no bit mais significativo e um no resto
+    // bool crc_next = (CRC_CALC >> 14) & 1;
+    // CRC_CALC <<= 1;
+    // if (crc_next ^ bit) {
+    //   CRC_CALC ^= 0x4599;
+    // }
+    // CRC_CALC &= 0x7fff; // zero no bit mais significativo e um no resto
   }
 }
 
@@ -452,11 +466,10 @@ void decoder(){
   static int state = 0;
   static int bit_cnt = 0;
 
-
   bool bit = RX_bit;
 
   // Debug
-  debug(pc.printf("bit: %d, State: %s, \n", bit, print_state(state)));
+  debug(pc.printf("bit: %d, State: %s, bit_cnt: %d \n", bit, print_state(state), bit_cnt));
 
   if(stuff_error || bit_error)
   {
@@ -488,6 +501,7 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 11)   
         {
+          debug(pc.printf("ID: %d \n", frame_recv.ID));
          state = SRR;
         }
     break;  
@@ -525,6 +539,7 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 18)
       {
+        debug(pc.printf("IDB: %d \n", frame_recv.IDB));
         state = RTR;
       }
     break;
@@ -547,6 +562,7 @@ void decoder(){
       if(bit_cnt == 4)
       {
         bit_cnt = 0;
+        debug(pc.printf("DLC: %d \n", frame_recv.DLC));
         if(frame_recv.DLC >=8)
         {
           frame_recv.DLC = 8;
@@ -557,7 +573,7 @@ void decoder(){
           frame_recv.CRC_V = 0;
           state = CRC_V;
         }
-        else if (RTR == 0)
+        else if (frame_recv.RTR == 0)
         {
           frame_recv.DATA = 0;
           state = DATA;
@@ -569,17 +585,20 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == (frame_recv.DLC * 8))
       {
+        debug(pc.printf("DATA: %d \n", frame_recv.DATA));
         bit_cnt = 0;
-        CRC_en = 0;
         frame_recv.CRC_V = 0;
         state = CRC_V;
       } 
     break;
     case(CRC_V):
+      CRC_en = 0;
       frame_recv.CRC_V = (frame_recv.CRC_V << 1) ^ bit;
       bit_cnt++;
       if(bit_cnt == 15)
       {
+        debug(pc.printf("CRC_V: %d \n", frame_recv.CRC_V));
+        debug(pc.printf("CRC_CALC: %d \n", CRC_CALC));
         stuff_en = 0;
         state = CRC_D;
       }
@@ -1003,7 +1022,7 @@ int main() {
   // wrt_sp_pt_int.rise(&bitstuffWRITE);
 
   // read_pt_int.rise(&arbitration);
-  // read_pt_int.rise(&decoder);
+  read_pt_int.rise(&decoder);
 
   // write_pt_int.rise(&encoder);
 
