@@ -28,7 +28,7 @@ DigitalIn BT(BUTTON1);
 Serial pc(USBTX, USBRX, 115200);
 
 // #define F_OSC 16000000
-#define TIME_QUANTA_S 0.10
+#define TIME_QUANTA_S 0.01
 // #define TIME_QUANTA_S (2 / F_OSC)
 // #define BIT_RATE 500000
 
@@ -324,13 +324,13 @@ void bitstuffREAD()
   read_pt = 0;
   last_rx = RX_bit;
   
+  // Debug <--
   RX_bit = frame[frame_index];
-  
-  debug(pc.printf("RX_bit: %d\n", RX_bit));
-
+  debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
   frame_index++;
   if(frame_index >= sizeof(frame)/sizeof(bool))
     frame_index = 0;
+  // Debug -->
 
   switch(state)
   {
@@ -367,6 +367,7 @@ void bitstuffREAD()
         {
           count = 0;
           state = START;
+          debug(pc.printf("stuff \n"));
         }
         else if(RX != last_rx && count != 5)
         {
@@ -450,6 +451,10 @@ void decoder(){
 
 
   bool bit = RX_bit;
+
+  // Debug
+  debug(pc.printf("bit: %d, State: %s, \n", bit, print_state(state)));
+
   if(stuff_error || bit_error)
   {
     bit_cnt = 0;
