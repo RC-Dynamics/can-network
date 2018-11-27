@@ -77,7 +77,7 @@ CAN_FRAME frame_send;
 uint16_t CRC_CALC = 0;
 
 // Debug        
-bool frame[] = {1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+bool frame[] = {1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 int frame_index = 0;
 
 bool CRC_en;
@@ -319,15 +319,16 @@ void bitstuffREAD()
   static int state = 0;
   static int last_rx;
   
-  // debug(pc.printf("Stuff READ: status: %s - stuff_en: %d - error: %d - read_pt: %d - count: %d\n", (state==0)?"START":"COUNT", stuff_en, stuff_error, read_pt_int.read(), count));
   
   read_pt = 0;
   last_rx = RX_bit;
+  RX_bit = RX;
   
   // Debug <--
+  stuff_en = 1;
   RX_bit = frame[frame_index];
-  debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
   frame_index++;
+  // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
   if(frame_index >= sizeof(frame)/sizeof(bool))
     frame_index = 0;
   // Debug -->
@@ -345,12 +346,12 @@ void bitstuffREAD()
       break;
 
     case(COUNT):
-      if(RX == last_rx && count == 5 && stuff_en)
+      if(RX_bit == last_rx && count == 5 && stuff_en)
       {
         stuff_error = 1;
-        count = 0;
+        count = 1;
         read_pt = 1;
-        state = START;
+        state = COUNT;
       } else {
         if(!stuff_en)
         {
@@ -358,26 +359,28 @@ void bitstuffREAD()
           read_pt = 1;
           state = START;
         }
-        else if(RX == last_rx)
+        else if(RX_bit == last_rx)
         {
           count++;
           read_pt = 1;
         }
-        else if(RX != last_rx && count == 5) // STUFF
+        else if(RX_bit != last_rx && count == 5) // STUFF
         {
-          count = 0;
-          state = START;
+          count = 1;
+          // state = START;
           debug(pc.printf("stuff \n"));
         }
-        else if(RX != last_rx && count != 5)
+        else if(RX_bit != last_rx && count != 5)
         {
-          count = 0;
+          count = 1;
           read_pt = 1;
-          state = START;
+          // state = START;
         }
       }
       break;
   }
+  // debug(pc.printf("status: %s - RX_bit: %d - stuff_en: %d - error: %d - read_pt: %d - count: %d\n", (state==0)?"START":"COUNT", RX_bit, stuff_en, stuff_error, read_pt_int.read(), count));
+
 }
 
 void bitstuffWRITE()
