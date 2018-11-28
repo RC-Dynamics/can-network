@@ -408,7 +408,7 @@ void bitstuffREAD()
 
 void bitstuffWRITE()
 {
-  static int count = 0;
+  static int count = 1;
   static int state = 0;
   static int last_tx;
   
@@ -510,7 +510,7 @@ void decoder(){
         idle = 0;
         state = ID;
       }
-    break;
+     break;
     case(ID):
       frame_recv.ID = (frame_recv.ID << 1) ^ bit;
       bit_cnt++;
@@ -519,12 +519,12 @@ void decoder(){
         debug(pc.printf("ID: %x \n", frame_recv.ID));
         state = SRR;
        }
-    break;  
+      break;  
     case(SRR):
       frame_recv.RTR = bit;
       debug(pc.printf("RTR/SRR: %d \n", frame_recv.RTR));
       state = IDE;
-    break;
+      break;
     case(IDE):
       frame_recv.IDE = bit;
       debug(pc.printf("IDE: %d \n", frame_recv.IDE));
@@ -547,13 +547,13 @@ void decoder(){
         TX_en = 1;
         state = ERROR_FLAG;
       }
-    break;
+      break;
     case(R0):
       frame_recv.R0 = bit;
       debug(pc.printf("R0: %d \n", frame_recv.R0));
       frame_recv.DLC = 0;
       state = DLC;
-    break;
+     break;
     case(IDB):
       frame_recv.IDB = (frame_recv.IDB << 1) ^ bit;
       bit_cnt++;
@@ -562,24 +562,24 @@ void decoder(){
         debug(pc.printf("IDB: %x \n", frame_recv.IDB));
         state = RTR;
       }
-    break;
+      break;
     case(RTR):
       frame_recv.RTR = bit;
       debug(pc.printf("RTR: %d \n", frame_recv.RTR));
       state = R1;
-    break;
+      break;
     case(R1):
       frame_recv.R1 = bit;
       debug(pc.printf("R1: %d \n", frame_recv.R1));
       state = R2;
-    break;
+      break;
     case(R2):
       frame_recv.R2 = bit;
       frame_recv.DLC = 0;
       debug(pc.printf("R2: %d \n", frame_recv.R2));
       bit_cnt = 0;
       state = DLC;
-    break;
+      break;
     case(DLC):
       frame_recv.DLC = (frame_recv.DLC << 1) ^ bit;
       bit_cnt++;
@@ -605,7 +605,7 @@ void decoder(){
           state = DATA;
         }
       }
-    break;
+     break;
     case(DATA):
       frame_recv.DATA = (frame_recv.DATA << 1) ^ bit;
       bit_cnt++;
@@ -616,7 +616,7 @@ void decoder(){
         frame_recv.CRC_V = 0;
         state = CRC_V;
       } 
-    break;
+     break;
     case(CRC_V):
       CRC_en = 0;
       frame_recv.CRC_V = (frame_recv.CRC_V << 1) ^ bit;
@@ -628,7 +628,7 @@ void decoder(){
         stuff_en = 0;
         state = CRC_D;
       }
-    break;
+      break;
     case(CRC_D):
       frame_recv.CRC_D = bit;
       TX_decod = 0; // OLHAR ENCODER
@@ -645,13 +645,13 @@ void decoder(){
         stuff_en = 0;
         state = ERROR_FLAG;
       }
-    break;
+      break;
     case(ACK_S):
       frame_recv.ACK_S = bit;
       debug(pc.printf("ACK_S: %d\n", bit));
       TX_decod = 1; // OLHAR ENCODER
       state = ACK_D;
-    break;  
+      break;  
     case(ACK_D):
       frame_recv.ACK_D = bit;
       debug(pc.printf("ACK_D: %d \n", frame_recv.ACK_D));
@@ -673,7 +673,7 @@ void decoder(){
         frame_recv.EOFRAME = 0;
         state = EOFRAME;
       }
-    break;
+      break;
     case(EOFRAME):
       frame_recv.EOFRAME = (frame_recv.EOFRAME << 1) ^ bit;
       bit_cnt++;
@@ -691,7 +691,7 @@ void decoder(){
         TX_en = 1;
         state = ERROR_FLAG;
       }
-    break;
+     break;
     case(INTERFRAME):
       bit_cnt++;
       
@@ -708,7 +708,7 @@ void decoder(){
         debug(pc.printf("INTERFRAME\n"));
         state = IDLE;
       }
-    break;
+     break;
     case(OVERLOAD):
       bit_cnt++;
       if(bit_cnt == 6)
@@ -719,7 +719,7 @@ void decoder(){
         debug(pc.printf("OVERLOAD\n"));
         state = OVERLOAD_D;
       }
-    break;
+      break;
     case(OVERLOAD_D):
       bit_cnt++;
       if(bit == 0)
@@ -733,7 +733,7 @@ void decoder(){
         debug(pc.printf("OVERLOAD_DELIMITER\n"));
         state = INTERFRAME;
       }
-    break;
+      break;
     case(ERROR_FLAG):
       bit_cnt++;
       if(bit_cnt == 5)
@@ -745,8 +745,8 @@ void decoder(){
         debug(pc.printf("ERROR_FLAG\n"));
         state = ERROR_D;
       }
-    break;
-    case(ERROR_D):
+     break;
+   case(ERROR_D):
       bit_cnt++;
       if(bit == 0)
       {
@@ -759,7 +759,7 @@ void decoder(){
         debug(pc.printf("ERROR_DELIMITER\n"));
         state = INTERFRAME;
       }
-    break;
+      break;
   }
   calculateCRC(bit);
 }
@@ -792,6 +792,7 @@ void encoder(){
       }
       if(write_en){
         TX_bit = frame_send.SOF;
+        write_en = 0;
         stuff_en = 1;
         state = SOF;
         bit_cnt = 0;
@@ -1068,44 +1069,37 @@ int main() {
   while(!BT);
   wait(0.5);
 
-  // frame_send.SOF = 0;
-  // frame_send.ID = 20;
-  // frame_send.SRR = 0;
-  // frame_send.RTR = 1;
-  // frame_send.IDE = 1;
-  // frame_send.R0 = 0;
-  // frame_send.IDB = 200;
-  // frame_send.R1 = 0;
-  // frame_send.R2 = 0;
-  // frame_send.DLC = 2;
-  // frame_send.DATA = 0xaaaa;
-  // frame_send.data_b = false;
-  // frame_send.CRC_V = 30547;
-  // frame_send.CRC_D = 1;
-  // frame_send.ACK_S = 0;
-  // frame_send.ACK_D = 1;
-  // frame_send.EOFRAME = 127;
+  frame_send.SOF = 0;
+  frame_send.ID = 20;
+  frame_send.SRR = 0;
+  frame_send.RTR = 1;
+  frame_send.IDE = 0;
+  frame_send.R0 = 0;
+  frame_send.IDB = 200;
+  frame_send.R1 = 0;
+  frame_send.R2 = 0;
+  frame_send.DLC = 2;
+  frame_send.DATA = 0xaaaa;
+  frame_send.data_b = false;
+  frame_send.CRC_V = 30547;
+  frame_send.CRC_D = 1;
+  frame_send.ACK_S = 0;
+  frame_send.ACK_D = 1;
+  frame_send.EOFRAME = 127;
  
   RX.fall(&edgeDetector);
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
   
   sample_pt_int.rise(&bitstuffREAD);
-  // wrt_sp_pt_int.rise(&bitstuffWRITE);
+  wrt_sp_pt_int.rise(&bitstuffWRITE);
 
   read_pt_int.rise(&decoder);
-  // write_pt_int.rise(&encoder);
+  write_pt_int.rise(&encoder);
 
-  // write_en = 1;
+  write_en = 1;
   // wait(0.2);
   // write_en = 0;
 
   while(1) {
-    // if(BT){
-    //   idle = !idle;
-    //   // stuff_en = !stuff_en;
-    //   wait(0.3);
-    //   while(BT);
-    // }
-
   }
 }
