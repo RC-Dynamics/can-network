@@ -21,4 +21,10 @@ main
 
 bitTiming
     wrt_sp_pt = 1;
+        bitstuffWRITE
+            write_pt = 0;
+            last_tx = TX_IN;
+            TX = TX_bit;
+            write_pt = 1;
+                
         
