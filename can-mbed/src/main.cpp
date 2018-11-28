@@ -68,7 +68,7 @@ bool RX_bit = 0;
 bool TX_bit = 0;
 
 // BitStuffing <-> 
-bool stuff_en = 0;
+bool stuff_en = 1;
 bool stuff_error = 0;
 
 // Decoder
@@ -82,9 +82,9 @@ int CRC_CALC = 0;
 // Frame Wikipedia sem bit stuff
 // bool frame[] = {0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1};
 // Frame crc certo
-// bool frame[] = {0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1};
+bool frame[] = {0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1};
 // Frame crc ext certo
-bool frame[] = {0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1};
+// bool frame[] = {0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1};
 
 int frame_index = 0;
 
@@ -135,7 +135,8 @@ enum  states_bit_timing {
 
 enum  states_bit_stuffing {
   START = 0,
-  COUNT
+  COUNT,
+  STUFF
 } states_bit_stuffing;
 
 enum states_coder
@@ -333,7 +334,6 @@ void bitstuffREAD()
   RX_bit = RX;
   
   // Debug <--
-  stuff_en = 1;
   RX_bit = frame[frame_index];
   frame_index++;
   // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
@@ -363,7 +363,7 @@ void bitstuffREAD()
       } else {
         if(!stuff_en)
         {
-          count = 0;
+          count = 1;
           read_pt = 1;
           state = START;
         }
@@ -396,12 +396,20 @@ void bitstuffWRITE()
   static int count = 0;
   static int state = 0;
   static int last_tx;
+
+  // Debug <--
+  stuff_en = 1;
+  if (state == STUFF)
+    frame_index--;
+  TX_bit = frame[frame_index];
+  frame_index++;
+  if(frame_index >= sizeof(frame)/sizeof(bool))
+    frame_index = 0;
+  // Debug -->
   
-  // debug(pc.printf("Stuff WRITE: status: %s - stuff_en: %d - wrt_pt: %d - count: %d\n", (state==0)?"START":"COUNT", stuff_en, write_pt_int.read(), count));
-
   write_pt = 0;
+  last_tx = TX_IN.read();
 
-  last_tx = TX;
   switch(state)
   {
     case(START):
@@ -415,34 +423,38 @@ void bitstuffWRITE()
       break;
 
     case(COUNT):
+      TX = TX_bit;
       if(!stuff_en)
       {
-        count = 0;
-        TX = TX_bit;
+        count = 1;
         write_pt = 1;
-        state = START;
-      }
-      else if(count == 5 && TX_bit == last_tx) // STUFF
-      {
-        TX = !TX_bit;
-        count = 0;
         state = START;
       }
       else if(TX_bit == last_tx)
       {
         count++;
-        TX = TX_bit;
         write_pt = 1;
       }
-      else if(TX_bit != last_tx && count != 5)
+      else if(TX_bit != last_tx)
       {
-        count = 0;
-        TX = TX_bit;
+        count = 1;
         write_pt = 1;
-        state = START;
+      }
+      if(count == 5 && TX_bit == last_tx) // STUFF
+      {
+        state = STUFF;
       }
       break;
+    case (STUFF):
+      debug(pc.printf("stuff \n"));
+      TX = !TX_bit;
+      state = COUNT;
+      write_pt = 1;
+      count = 1;
+      break;
   }
+
+  debug(pc.printf("TX: %d, last: %d, F_Index: %d, State: %d, count: %d \n", TX_IN.read(), last_tx, frame_index, state, count));
 }
 
 void calculateCRC(bool bit)
@@ -477,6 +489,7 @@ void decoder(){
     TX_decod = 0;
     TX_en = 1;
     state = ERROR_FLAG;
+    debug(pc.printf("Error Detected: %s\n", (stuff_error)?"STUFF_ERROR": "BIT_ERROR"));
     stuff_error = 0;
     bit_error = 0;
   }
@@ -486,12 +499,12 @@ void decoder(){
       idle = 1;
       if(bit == 0)
       {
+        stuff_en = 1;
         frame_recv.SOF = bit;
         bit_cnt = 0;
         frame_recv.ID = 0;
         CRC_CALC = 0;
         CRC_en = 1;
-        stuff_en = 1; //
         idle = 0;
         state = ID;
       }
@@ -500,10 +513,10 @@ void decoder(){
       frame_recv.ID = (frame_recv.ID << 1) ^ bit;
       bit_cnt++;
       if(bit_cnt == 11)   
-        {
-          debug(pc.printf("ID: %d \n", frame_recv.ID));
-         state = SRR;
-        }
+      {
+        debug(pc.printf("ID: %d \n", frame_recv.ID));
+        state = SRR;
+       }
     break;  
     case(SRR):
       frame_recv.RTR = bit;
@@ -555,6 +568,7 @@ void decoder(){
       frame_recv.R2 = bit;
       frame_recv.DLC = 0;
       bit_cnt = 0;
+      state = DLC;
     break;
     case(DLC):
       frame_recv.DLC = (frame_recv.DLC << 1) ^ bit;
@@ -569,7 +583,7 @@ void decoder(){
         }
         if(frame_recv.RTR == 1 || frame_recv.DLC == 0)
         {
-          CRC_en = 0;
+          // CRC_en = 0;
           frame_recv.CRC_V = 0;
           state = CRC_V;
         }
@@ -623,12 +637,13 @@ void decoder(){
       TX_decod = 1; // OLHAR ENCODER
       state = ACK_D;
     break;
+    
     case(ACK_D):
     frame_recv.ACK_D = bit;
     debug(pc.printf("ACK_D: %d \n", frame_recv.ACK_D));
       if(frame_recv.CRC_V != CRC_CALC || bit == 0)
       {
-        debug(pc.printf("CRC_V =! CRC_CALC"));
+        debug(pc.printf("CRC_V =! CRC_CALC\n"));
         bit_cnt = 0;
         TX_decod = 0; // OLHAR ENCODER
         TX_en = 1;
@@ -725,6 +740,8 @@ void decoder(){
 void encoder(){
   static int state = 0;
   static int bit_cnt = 0;
+
+  debug(pc.printf("Encoder-> bit: %d, State: %s, bit_cnt: %d \n", TX_bit, print_state(state), bit_cnt));
 
   if(TX_en){
     state = IDLE;
@@ -1017,14 +1034,33 @@ void encoder(){
 int main() {
   RX_OUT = 0; // Debug
 
+  
+  frame_send.SOF = 0;
+  frame_send.ID = 20;
+  frame_send.SRR = 0;
+  frame_send.RTR = 0;
+  frame_send.IDE = 0;
+  frame_send.R0 = 0;
+  frame_send.IDB = 0;
+  frame_send.R1 = 0;
+  frame_send.R2 = 0;
+  frame_send.DLC = 1;
+  frame_send.DATA = 1;
+  frame_send.data_b = false;
+  frame_send.CRC_V = 30547;
+  frame_send.CRC_D = 1;
+  frame_send.ACK_S = 0;
+  frame_send.ACK_D = 1;
+  frame_send.EOFRAME = 127;
+
   RX.fall(&edgeDetector);
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
   
-  sample_pt_int.rise(&bitstuffREAD);
-  // wrt_sp_pt_int.rise(&bitstuffWRITE);
+  // sample_pt_int.rise(&bitstuffREAD);
+  wrt_sp_pt_int.rise(&bitstuffWRITE);
 
   // read_pt_int.rise(&arbitration);
-  read_pt_int.rise(&decoder);
+  // read_pt_int.rise(&decoder);
 
   // write_pt_int.rise(&encoder);
 
