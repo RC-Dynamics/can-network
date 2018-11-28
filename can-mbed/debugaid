@@ -1,0 +1,24 @@
+RX_bit = 1;
+TX_bit = 1;
+TX_decod
+TX_en
+TX_ack
+write_en
+
+TX_IN // leitura TX
+RX_OUT // Manda valor pra RX
+
+interrupções
+sample_pt
+wrt_sp_pt
+read_pt
+write_pt
+
+main
+    RX_OUT = 1;
+    TX = 1;
+    write_en = 0
+
+bitTiming
+    wrt_sp_pt = 1;
+        
