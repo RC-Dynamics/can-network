@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <mbed.h>
 
 #define DEBUG
@@ -28,8 +29,7 @@ DigitalIn BT(BUTTON1);
 Serial pc(USBTX, USBRX, 115200);
 
 // #define F_OSC 16000000
-#define TIME_QUANTA_S 0.01
-// #define TIME_QUANTA_S (2 / F_OSC)
+#define TIME_QUANTA_S 0.01// #define TIME_QUANTA_S (2 / F_OSC)
 // #define BIT_RATE 500000
 
 #define SJW 1
@@ -64,11 +64,11 @@ bool soft_sync = 0;
 bool idle = 0;
 
 // BitStuffing <-> Timing
-bool RX_bit = 0;
-bool TX_bit = 0;
+bool RX_bit = 1;
+bool TX_bit = 1;
 
 // BitStuffing <-> 
-bool stuff_en = 1;
+bool stuff_en = 0;
 bool stuff_error = 0;
 
 // Decoder
@@ -82,9 +82,23 @@ int CRC_CALC = 0;
 // Frame Wikipedia sem bit stuff
 // bool frame[] = {0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1};
 // Frame crc certo
-bool frame[] = {0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1};
+// bool frame[] = {0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1};
 // Frame crc ext certo
 // bool frame[] = {0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1};
+// alain - 1
+bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
+// alain - 9
+// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,1,0,0,1,0,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
+// alain - 12
+// bool frame [] = {0,1,0,0,0,1,0,0,1,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
+// alain - 17 - ack error
+// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
+// alain - 18 - stuff error
+// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
+// alain - 19 - crc error
+// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,0,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
+// alain - 24 - idle grande
+// bool frame[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1};
 
 int frame_index = 0;
 
@@ -243,6 +257,7 @@ void edgeDetector(){
   {
     soft_sync = 0;
     hard_sync = 1;
+    idle = 0;
   }
   else
   {
@@ -328,11 +343,10 @@ void bitstuffREAD()
   static int state = 0;
   static int last_rx;
   
-  
   read_pt = 0;
   last_rx = RX_bit;
   RX_bit = RX;
-  
+
   // Debug <--
   RX_bit = frame[frame_index];
   frame_index++;
@@ -356,6 +370,7 @@ void bitstuffREAD()
     case(COUNT):
       if(RX_bit == last_rx && count == 5 && stuff_en)
       {
+        stuff_en = 0;
         stuff_error = 1;
         count = 1;
         read_pt = 1;
@@ -376,7 +391,7 @@ void bitstuffREAD()
         {
           count = 1;
           // state = START;
-          debug(pc.printf("stuff \n"));
+          debug(pc.printf("stuff - read\n"));
         }
         else if(RX_bit != last_rx && count != 5)
         {
@@ -396,16 +411,6 @@ void bitstuffWRITE()
   static int count = 0;
   static int state = 0;
   static int last_tx;
-
-  // Debug <--
-  stuff_en = 1;
-  if (state == STUFF)
-    frame_index--;
-  TX_bit = frame[frame_index];
-  frame_index++;
-  if(frame_index >= sizeof(frame)/sizeof(bool))
-    frame_index = 0;
-  // Debug -->
   
   write_pt = 0;
   last_tx = TX_IN.read();
@@ -446,15 +451,15 @@ void bitstuffWRITE()
       }
       break;
     case (STUFF):
-      debug(pc.printf("stuff \n"));
+      debug(pc.printf("stuff - write\n"));
       TX = !TX_bit;
       state = COUNT;
       write_pt = 1;
       count = 1;
       break;
   }
-
-  debug(pc.printf("TX: %d, last: %d, F_Index: %d, State: %d, count: %d \n", TX_IN.read(), last_tx, frame_index, state, count));
+  
+  // debug(pc.printf("TX: %d, last: %d, F_Index: %d, State: %d, count: %d \n", TX_IN.read(), last_tx, frame_index, state, count));
 }
 
 void calculateCRC(bool bit)
@@ -465,12 +470,6 @@ void calculateCRC(bool bit)
       CRC_CALC ^= 0x4599;
     }
     CRC_CALC &= 0x7fff; // zero no bit mais significativo e um no resto
-    // bool crc_next = (CRC_CALC >> 14) & 1;
-    // CRC_CALC <<= 1;
-    // if (crc_next ^ bit) {
-    //   CRC_CALC ^= 0x4599;
-    // }
-    // CRC_CALC &= 0x7fff; // zero no bit mais significativo e um no resto
   }
 }
 
@@ -481,10 +480,11 @@ void decoder(){
   bool bit = RX_bit;
 
   // Debug
-  debug(pc.printf("bit: %d, State: %s, bit_cnt: %d \n", bit, print_state(state), bit_cnt));
+  // debug(pc.printf("bit: %d, State: %s, bit_cnt: %d \n", bit, print_state(state), bit_cnt));
 
   if(stuff_error || bit_error)
   {
+    stuff_en = 0;
     bit_cnt = 0;
     TX_decod = 0;
     TX_en = 1;
@@ -506,6 +506,7 @@ void decoder(){
         CRC_CALC = 0;
         CRC_en = 1;
         idle = 0;
+        debug(pc.printf("IDLE\n"));
         state = ID;
       }
     break;
@@ -514,29 +515,33 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 11)   
       {
-        debug(pc.printf("ID: %d \n", frame_recv.ID));
+        debug(pc.printf("ID: %x \n", frame_recv.ID));
         state = SRR;
        }
     break;  
     case(SRR):
       frame_recv.RTR = bit;
+      debug(pc.printf("RTR/SRR: %d \n", frame_recv.RTR));
       state = IDE;
     break;
     case(IDE):
       frame_recv.IDE = bit;
+      debug(pc.printf("IDE: %d \n", frame_recv.IDE));
       bit_cnt = 0;
       if(bit == 0) 
       {
         state = R0;
       }
-      else if(bit == 1 && frame_recv.RTR == 0) 
+      else if(bit == 1 && frame_recv.RTR == 1) 
       {
         frame_recv.SRR = frame_recv.RTR;
+        debug(pc.printf("SRR: %d \n", frame_recv.SRR));
         frame_recv.IDB = 0;
         state = IDB;
       }
-      else if(bit == 1 && frame_recv.RTR == 1) // RTR = SRR
+      else if(bit == 1 && frame_recv.RTR == 0) // RTR = SRR
       { // OLHAR ENCODER
+        stuff_en = 0;
         TX_decod = 0;
         TX_en = 1;
         state = ERROR_FLAG;
@@ -544,6 +549,7 @@ void decoder(){
     break;
     case(R0):
       frame_recv.R0 = bit;
+      debug(pc.printf("R0: %d \n", frame_recv.R0));
       frame_recv.DLC = 0;
       state = DLC;
     break;
@@ -552,21 +558,24 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 18)
       {
-        debug(pc.printf("IDB: %d \n", frame_recv.IDB));
+        debug(pc.printf("IDB: %x \n", frame_recv.IDB));
         state = RTR;
       }
     break;
     case(RTR):
       frame_recv.RTR = bit;
+      debug(pc.printf("RTR: %d \n", frame_recv.RTR));
       state = R1;
     break;
     case(R1):
       frame_recv.R1 = bit;
+      debug(pc.printf("R1: %d \n", frame_recv.R1));
       state = R2;
     break;
     case(R2):
       frame_recv.R2 = bit;
       frame_recv.DLC = 0;
+      debug(pc.printf("R2: %d \n", frame_recv.R2));
       bit_cnt = 0;
       state = DLC;
     break;
@@ -599,7 +608,7 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == (frame_recv.DLC * 8))
       {
-        debug(pc.printf("DATA: %d \n", frame_recv.DATA));
+        debug(pc.printf("DATA: %" PRIx64 "\n", frame_recv.DATA));
         bit_cnt = 0;
         frame_recv.CRC_V = 0;
         state = CRC_V;
@@ -611,7 +620,7 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 15)
       {
-        debug(pc.printf("CRC_V: %d \n", frame_recv.CRC_V));
+        debug(pc.printf("CRC_Value: %d \n", frame_recv.CRC_V));
         debug(pc.printf("CRC_CALC: %d \n", CRC_CALC));
         stuff_en = 0;
         state = CRC_D;
@@ -620,6 +629,7 @@ void decoder(){
     case(CRC_D):
       frame_recv.CRC_D = bit;
       TX_decod = 0; // OLHAR ENCODER
+      debug(pc.printf("CRC_D: %d\n", bit));
       if(bit == 1)
       {
         TX_ack = 1;
@@ -629,21 +639,26 @@ void decoder(){
       {
         TX_en = 1;
         bit_cnt = 0;
+        stuff_en = 0;
         state = ERROR_FLAG;
       }
     break;
     case(ACK_S):
       frame_recv.ACK_S = bit;
+      debug(pc.printf("ACK_S: %d\n", bit));
       TX_decod = 1; // OLHAR ENCODER
       state = ACK_D;
-    break;
-    
+    break;  
     case(ACK_D):
-    frame_recv.ACK_D = bit;
-    debug(pc.printf("ACK_D: %d \n", frame_recv.ACK_D));
+      frame_recv.ACK_D = bit;
+      debug(pc.printf("ACK_D: %d \n", frame_recv.ACK_D));
       if(frame_recv.CRC_V != CRC_CALC || bit == 0)
       {
-        debug(pc.printf("CRC_V =! CRC_CALC\n"));
+        debug(if(frame_recv.CRC_V != CRC_CALC))
+          debug(pc.printf("CRC_V =! CRC_CALC\n"));
+        debug(else)
+          debug(pc.printf("ACK Error\n"));
+        stuff_en = 0;
         bit_cnt = 0;
         TX_decod = 0; // OLHAR ENCODER
         TX_en = 1;
@@ -662,10 +677,12 @@ void decoder(){
       if(bit == 1 && bit_cnt == 7)
       {
         bit_cnt = 0;
+        debug(pc.printf("EOFRAME\n"));
         state = INTERFRAME;
       }
       else if(bit == 0)
       {
+        stuff_en = 0;
         bit_cnt = 0;
         TX_decod = 0; // OLHAR ENCODER
         TX_en = 1;
@@ -674,15 +691,18 @@ void decoder(){
     break;
     case(INTERFRAME):
       bit_cnt++;
+      
       if(bit == 0)
       {
         TX_decod = 0;
         TX_en = 1; // OLHAR ENCODER
         bit_cnt = 0;
+        debug(pc.printf("INTERFRAME\n"));
         state = OVERLOAD;
       }
       else if(bit_cnt == 2)
       {
+        debug(pc.printf("INTERFRAME\n"));
         state = IDLE;
       }
     break;
@@ -693,6 +713,7 @@ void decoder(){
         bit_cnt = 0;
         TX_decod = 1; // OLHAR ENCODER
         TX_en = 1;
+        debug(pc.printf("OVERLOAD\n"));
         state = OVERLOAD_D;
       }
     break;
@@ -706,6 +727,7 @@ void decoder(){
       {
         bit_cnt = 0;
         TX_en = 0;
+        debug(pc.printf("OVERLOAD_DELIMITER\n"));
         state = INTERFRAME;
       }
     break;
@@ -717,6 +739,7 @@ void decoder(){
         bit_cnt = 0;
         TX_decod = 1; 
         TX_en = 1;
+        debug(pc.printf("ERROR_FLAG\n"));
         state = ERROR_D;
       }
     break;
@@ -730,6 +753,7 @@ void decoder(){
       {
         bit_cnt = 0;
         TX_en = 0;
+        debug(pc.printf("ERROR_DELIMITER\n"));
         state = INTERFRAME;
       }
     break;
@@ -741,7 +765,9 @@ void encoder(){
   static int state = 0;
   static int bit_cnt = 0;
 
-  debug(pc.printf("Encoder-> bit: %d, State: %s, bit_cnt: %d \n", TX_bit, print_state(state), bit_cnt));
+  debug(pc.printf("Encoder-> bit: %d, State: %s, bit_cnt: %d -- en: %d\n", TX_bit, print_state(state), bit_cnt, write_en));
+  // DEBUG
+  RX_bit = TX_bit;
 
   if(TX_en){
     state = IDLE;
@@ -895,7 +921,7 @@ void encoder(){
         break;
       }
       bit_cnt = 0;
-      TX_bit = frame_send.DLC >> (3 - bit_cnt);
+      TX_bit = (frame_send.DLC >> (3 - bit_cnt)) & 1;
       bit_cnt++;
       break;
 
@@ -915,12 +941,12 @@ void encoder(){
           state = CRC_V;
         } else {
           bit_cnt = 0;
-          TX_bit = (frame_send.DATA >> ((frame_send.DLC * 8) - bit_cnt - 1));
+          TX_bit = (frame_send.DATA >> ((frame_send.DLC * 8) - bit_cnt - 1)) & 1;
           bit_cnt++;
           state = DATA;
         }
       } else {
-        TX_bit = frame_send.DLC >> (3 - bit_cnt);
+        TX_bit = frame_send.DLC >> (3 - bit_cnt) & 1;
         bit_cnt++;
       }
       
@@ -940,7 +966,7 @@ void encoder(){
         bit_cnt = 1;
         state = CRC_V;
       } else {
-        TX_bit = (frame_send.DATA >> ((frame_send.DLC * 8) - bit_cnt - 1));
+        TX_bit = (frame_send.DATA >> ((frame_send.DLC * 8) - bit_cnt - 1)) & 1;
         bit_cnt++;
       }
       break;
@@ -958,7 +984,7 @@ void encoder(){
         TX_bit = frame_send.CRC_D;
         state = CRC_D;
       } else {
-        TX_bit = CRC_CALC >> (14 - bit_cnt);
+        TX_bit = (CRC_CALC >> (14 - bit_cnt)) & 1;
         bit_cnt++;
       }
       break;
@@ -991,7 +1017,7 @@ void encoder(){
       bit_cnt = 0;
       TX_bit = (frame_send.EOFRAME >> (6-bit_cnt) ) & 1;
       bit_cnt++;
-      state = ACK_D;
+      state = EOFRAME;
       break;
 
     case EOFRAME:
@@ -1005,8 +1031,9 @@ void encoder(){
       if(bit_cnt == 7){
         TX_bit = 1;
         bit_cnt = 0;
+        state = INTERFRAME;
       } else {
-        TX_bit = (frame_send.EOFRAME >> (6-bit_cnt) ) & 1;
+        TX_bit = (frame_send.EOFRAME >> (6-bit_cnt)) & 1;
         bit_cnt++;
       }
       break;
@@ -1028,13 +1055,12 @@ void encoder(){
       }
       break;
   }
-
 }
 
 int main() {
-  RX_OUT = 0; // Debug
+   RX_OUT = 1;
+   TX = 1;
 
-  
   frame_send.SOF = 0;
   frame_send.ID = 20;
   frame_send.SRR = 0;
@@ -1044,25 +1070,27 @@ int main() {
   frame_send.IDB = 0;
   frame_send.R1 = 0;
   frame_send.R2 = 0;
-  frame_send.DLC = 1;
-  frame_send.DATA = 1;
+  frame_send.DLC = 2;
+  frame_send.DATA = 0xaaaa;
   frame_send.data_b = false;
   frame_send.CRC_V = 30547;
   frame_send.CRC_D = 1;
   frame_send.ACK_S = 0;
   frame_send.ACK_D = 1;
   frame_send.EOFRAME = 127;
-
+ 
   RX.fall(&edgeDetector);
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
   
   // sample_pt_int.rise(&bitstuffREAD);
   wrt_sp_pt_int.rise(&bitstuffWRITE);
 
-  // read_pt_int.rise(&arbitration);
   // read_pt_int.rise(&decoder);
+  write_pt_int.rise(&encoder);
 
-  // write_pt_int.rise(&encoder);
+  write_en = 1;
+  wait(0.2);
+  write_en = 0;
 
   while(1) {
     if(BT){
