@@ -86,7 +86,7 @@ int CRC_CALC = 0;
 // Frame crc ext certo
 // bool frame[] = {0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1};
 // alain - 1
-bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
+// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 9
 // bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,1,0,0,1,0,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 12
@@ -94,7 +94,7 @@ bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
 // alain - 17 - ack error
 // bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 18 - stuff error
-// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
+bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 19 - crc error
 // bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,0,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 24 - idle grande
@@ -338,8 +338,8 @@ void bitTimingSM(){
 }
 
 void bitstuffREAD()
-{
-  static int count = 0;
+{ 
+  static int count = 1;
   static int state = 0;
   static int last_rx;
   
@@ -497,16 +497,17 @@ void decoder(){
   {
     case(IDLE):
       idle = 1;
+      debug(pc.printf("IDLE\n"));
       if(bit == 0)
       {
         stuff_en = 1;
         frame_recv.SOF = bit;
+        debug(pc.printf("START OF FRAME\n"));
         bit_cnt = 0;
         frame_recv.ID = 0;
         CRC_CALC = 0;
         CRC_en = 1;
         idle = 0;
-        debug(pc.printf("IDLE\n"));
         state = ID;
       }
     break;
@@ -585,11 +586,13 @@ void decoder(){
       if(bit_cnt == 4)
       {
         bit_cnt = 0;
-        debug(pc.printf("DLC: %d \n", frame_recv.DLC));
-        if(frame_recv.DLC >=8)
+        debug(pc.printf("DLC: %d ", frame_recv.DLC));
+        if(frame_recv.DLC > 8)
         {
           frame_recv.DLC = 8;
+          debug(pc.printf("--> DLC: %d", frame_recv.DLC));
         }
+        debug(pc.printf("\n"));
         if(frame_recv.RTR == 1 || frame_recv.DLC == 0)
         {
           // CRC_en = 0;
@@ -923,6 +926,7 @@ void encoder(){
       bit_cnt = 0;
       TX_bit = (frame_send.DLC >> (3 - bit_cnt)) & 1;
       bit_cnt++;
+      state = DLC;
       break;
 
     case DLC:
@@ -1058,47 +1062,50 @@ void encoder(){
 }
 
 int main() {
-   RX_OUT = 1;
-   TX = 1;
+  RX_OUT = 1;
+  TX = 1;
 
-  frame_send.SOF = 0;
-  frame_send.ID = 20;
-  frame_send.SRR = 0;
-  frame_send.RTR = 0;
-  frame_send.IDE = 0;
-  frame_send.R0 = 0;
-  frame_send.IDB = 0;
-  frame_send.R1 = 0;
-  frame_send.R2 = 0;
-  frame_send.DLC = 2;
-  frame_send.DATA = 0xaaaa;
-  frame_send.data_b = false;
-  frame_send.CRC_V = 30547;
-  frame_send.CRC_D = 1;
-  frame_send.ACK_S = 0;
-  frame_send.ACK_D = 1;
-  frame_send.EOFRAME = 127;
+  while(!BT);
+  wait(0.5);
+
+  // frame_send.SOF = 0;
+  // frame_send.ID = 20;
+  // frame_send.SRR = 0;
+  // frame_send.RTR = 1;
+  // frame_send.IDE = 1;
+  // frame_send.R0 = 0;
+  // frame_send.IDB = 200;
+  // frame_send.R1 = 0;
+  // frame_send.R2 = 0;
+  // frame_send.DLC = 2;
+  // frame_send.DATA = 0xaaaa;
+  // frame_send.data_b = false;
+  // frame_send.CRC_V = 30547;
+  // frame_send.CRC_D = 1;
+  // frame_send.ACK_S = 0;
+  // frame_send.ACK_D = 1;
+  // frame_send.EOFRAME = 127;
  
   RX.fall(&edgeDetector);
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
   
-  // sample_pt_int.rise(&bitstuffREAD);
-  wrt_sp_pt_int.rise(&bitstuffWRITE);
+  sample_pt_int.rise(&bitstuffREAD);
+  // wrt_sp_pt_int.rise(&bitstuffWRITE);
 
-  // read_pt_int.rise(&decoder);
-  write_pt_int.rise(&encoder);
+  read_pt_int.rise(&decoder);
+  // write_pt_int.rise(&encoder);
 
-  write_en = 1;
-  wait(0.2);
-  write_en = 0;
+  // write_en = 1;
+  // wait(0.2);
+  // write_en = 0;
 
   while(1) {
-    if(BT){
-      idle = !idle;
-      stuff_en = !stuff_en;
-      wait(0.3);
-      while(BT);
-    }
+    // if(BT){
+    //   idle = !idle;
+    //   // stuff_en = !stuff_en;
+    //   wait(0.3);
+    //   while(BT);
+    // }
 
   }
 }
