@@ -1,8 +1,8 @@
 RX_bit = 1;
 TX_bit = 1;
 TX_decod
-TX_en
-TX_ack
+TX_en "= 0"
+TX_ack "= 0"
 write_en
 
 TX_IN // leitura TX
@@ -17,7 +17,7 @@ write_pt
 main
     RX_OUT = 1;
     TX = 1;
-    write_en = 0
+    write_en = 1;
 
 bitTiming
     wrt_sp_pt = 1;
@@ -25,6 +25,58 @@ bitTiming
             write_pt = 0;
             last_tx = TX_IN;
             TX = TX_bit;
+            // RX_OUT = TX_IN
             write_pt = 1;
+                encoder
+                    print
+                    RX_bit = TX_bit;
+                    TX_bit =  frame.send.SOF;
+                    write_en = 0;
+                    stuff_en = 1;
+                    state = SOF;
+                    bit_cnt = 0;
+            count++;
+            state = Count;
+bitTiming
+    wrt_sp_pt = 0;
+    sample_pt = 0;
+    count++;
+...
+bitTiming
+    wrt_sp_pt = 0;
+    sample_pt = 0;
+    count = 0;
+    sample_pt = 1;
+        bit_stuffREAD
+            read_pt = 0;
+            last_rx = RX_bit;
+            RX_bit = RX;
+            read_pt = 1;
+                decoder
+                    bit = RX_bit;
+                    idle = 1;
+                    print;
+                    stuff_en = 1;
+                    frame.recv.SOF = bit;
+                    print;
+                    bit_cnt = 0;
+                    frame.recv.ID = 0;
+                    CRC_CALC = 0;
+                    CRC_en = 1;
+                    idle = 0;
+                    state = ID;
+                    calculateCRC(bit);
+    state = PHASE2_ST;
+bitTiming
+    wrt_sp_pt = 0;
+    sample_pt = 0;
+...
+bitTiming
+    wrt_sp_pt = 0;
+    sample_pt = 0;
+    wrt_sp_pt = 0;
+
+
+
                 
         
