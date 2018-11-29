@@ -4,7 +4,7 @@
         "PLATFORMIO_CALLER": "vscode"
     },
     "terminal.integrated.env.linux": {
-        "PATH": "/home/robocin/.platformio/penv/bin:/home/robocin/.platformio/penv:/home/robocin/anaconda2/bin:/home/robocin/.local/bin:/home/robocin/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games",
+        "PATH": "/home/robocin/.platformio/penv/bin:/home/robocin/.platformio/penv:/home/robocin/.local/bin:/home/robocin/anaconda2/bin:/home/robocin/.local/bin:/home/robocin/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games",
         "PLATFORMIO_CALLER": "vscode"
     }
 }

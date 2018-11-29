@@ -26,10 +26,11 @@
 
 DigitalIn BT(BUTTON1);
 
-Serial pc(USBTX, USBRX, 115200);
+Serial pc(USBTX, USBRX, 1843200);
 
 // #define F_OSC 16000000
-#define TIME_QUANTA_S 0.01// #define TIME_QUANTA_S (2 / F_OSC)
+#define TIME_QUANTA_S 0.01
+// #define TIME_QUANTA_S (2 / F_OSC)
 // #define BIT_RATE 500000
 
 #define SJW 1
@@ -86,15 +87,15 @@ int CRC_CALC = 0;
 // Frame crc ext certo
 // bool frame[] = {0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1};
 // alain - 1
-// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
+bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 9
-// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,1,0,0,1,0,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
+// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,1,0,0,1,0,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 // alain - 12
 // bool frame [] = {0,1,0,0,0,1,0,0,1,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 17 - ack error
 // bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 18 - stuff error
-bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
+// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 19 - crc error
 // bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,0,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 24 - idle grande
@@ -111,6 +112,8 @@ bool write_en;
 
 bool bit_error = 0;
 bool writing_flag = 0;
+
+bool last_tx = 1;
 
 // DEBUG
 DigitalIn TX_IN(PIN_TX_IN);
@@ -337,130 +340,6 @@ void bitTimingSM(){
   }
 }
 
-void bitstuffREAD()
-{ 
-  static int count = 1;
-  static int state = 0;
-  static int last_rx;
-  
-  read_pt = 0;
-  last_rx = RX_bit;
-  RX_bit = RX;
-
-  // Debug <--
-  RX_bit = frame[frame_index];
-  frame_index++;
-  // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
-  if(frame_index >= sizeof(frame)/sizeof(bool))
-    frame_index = 0;
-  // Debug -->
-
-  switch(state)
-  {
-    case(START):
-      stuff_error = 0;
-      read_pt = 1;
-      if(stuff_en)
-      {
-        count++;
-        state = COUNT;
-      }
-      break;
-
-    case(COUNT):
-      if(RX_bit == last_rx && count == 5 && stuff_en)
-      {
-        stuff_en = 0;
-        stuff_error = 1;
-        count = 1;
-        read_pt = 1;
-        state = COUNT;
-      } else {
-        if(!stuff_en)
-        {
-          count = 1;
-          read_pt = 1;
-          state = START;
-        }
-        else if(RX_bit == last_rx)
-        {
-          count++;
-          read_pt = 1;
-        }
-        else if(RX_bit != last_rx && count == 5) // STUFF
-        {
-          count = 1;
-          // state = START;
-          debug(pc.printf("stuff - read\n"));
-        }
-        else if(RX_bit != last_rx && count != 5)
-        {
-          count = 1;
-          read_pt = 1;
-          // state = START;
-        }
-      }
-      break;
-  }
-  // debug(pc.printf("status: %s - RX_bit: %d - stuff_en: %d - error: %d - read_pt: %d - count: %d\n", (state==0)?"START":"COUNT", RX_bit, stuff_en, stuff_error, read_pt_int.read(), count));
-
-}
-
-void bitstuffWRITE()
-{
-  static int count = 1;
-  static int state = 0;
-  static int last_tx;
-  
-  write_pt = 0;
-  last_tx = TX_IN.read();
-
-  switch(state)
-  {
-    case(START):
-      TX = TX_bit;
-      write_pt = 1;
-      if(stuff_en)
-      {
-        count++;
-        state = COUNT;
-      }
-      break;
-
-    case(COUNT):
-      TX = TX_bit;
-      if(!stuff_en)
-      {
-        count = 1;
-        write_pt = 1;
-        state = START;
-      }
-      else if(TX_bit == last_tx)
-      {
-        count++;
-        write_pt = 1;
-      }
-      else if(TX_bit != last_tx)
-      {
-        count = 1;
-        write_pt = 1;
-      }
-      if(count == 5 && TX_bit == last_tx) // STUFF
-      {
-        state = STUFF;
-      }
-      break;
-    case (STUFF):
-      debug(pc.printf("stuff - write\n"));
-      TX = !TX_bit;
-      state = COUNT;
-      write_pt = 1;
-      count = 1;
-      break;
-  }
-  
-  // debug(pc.printf("TX: %d, last: %d, F_Index: %d, State: %d, count: %d \n", TX_IN.read(), last_tx, frame_index, state, count));
-}
 
 void calculateCRC(bool bit)
 {
@@ -480,7 +359,8 @@ void decoder(){
   bool bit = RX_bit;
 
   // Debug
-  // debug(pc.printf("bit: %d, State: %s, bit_cnt: %d \n", bit, print_state(state), bit_cnt));
+  debug(pc.printf("%d %d   --> DECODER State: %s, bit_cnt: %d\n\n", TX_bit, bit, print_state(state), bit_cnt));
+  
 
   if(stuff_error || bit_error)
   {
@@ -767,10 +647,10 @@ void decoder(){
 void encoder(){
   static int state = 0;
   static int bit_cnt = 0;
-
-  debug(pc.printf("Encoder-> bit: %d, State: %s, bit_cnt: %d -- en: %d\n", TX_bit, print_state(state), bit_cnt, write_en));
   // DEBUG
   RX_bit = TX_bit;
+
+  debug(pc.printf("%d %d   --> ENCODER State: %s, bit_ctn: %d\n", TX_bit, RX_bit, print_state(state), bit_cnt));
 
   if(TX_en){
     state = IDLE;
@@ -1062,20 +942,151 @@ void encoder(){
   }
 }
 
+void bitstuffREAD()
+{ 
+  static int count = 0;
+  static int state = 0;
+  static int last_rx;
+  
+  // debug(pc.printf("         - stuff READ: status: %s - RX_bit: %d - stuff_en: %d - error: %d - read_pt: %d - count: %d\n", (state==0)?"START":"COUNT", RX_bit, stuff_en, stuff_error, read_pt_int.read(), count));
+
+  // read_pt = 0;
+  // last_rx = RX_bit;
+  // RX_bit = RX;
+  // RX_bit = TX_IN.read();
+
+  // pc.printf("att                                   %d\n", RX_bit);
+
+  // Debug <--
+  RX_bit = frame[frame_index];
+  frame_index++;
+  // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
+  if(frame_index >= sizeof(frame)/sizeof(bool))
+    frame_index = 0;
+  // Debug -->
+
+  switch(state)
+  {
+    case(START):
+      stuff_error = 0;
+      decoder();
+      if(stuff_en)
+      {
+        count++;
+        state = COUNT;
+      }
+      break;
+
+    case(COUNT):
+      if(RX_bit == last_rx && count == 5 && stuff_en)
+      {
+        stuff_en = 0;
+        stuff_error = 1;
+        count = 0;
+        decoder();
+        state = COUNT;
+      } else {
+        if(!stuff_en)
+        {
+          count = 0;
+          decoder();
+          state = START;
+        }
+        else if(RX_bit == last_rx)
+        {
+          count++;
+          decoder();
+        }
+        else if(RX_bit != last_rx && count == 5) // STUFF
+        {
+          count = 0;
+          // state = START;
+          debug(pc.printf("stuff - read\n"));
+        }
+        else if(RX_bit != last_rx && count != 5)
+        {
+          count = 0;
+          decoder();
+          // state = START;
+        }
+      }
+      break;
+  }
+  
+
+}
+
+void bitstuffWRITE()
+{
+  static int count = 0;
+  static int state = 0;
+
+  // debug(pc.printf("- stuff WRT: status: %s - TX_bit: %d - TX: %d - last TX: %d -  stuff_en: %d - error: %d - read_pt: %d - count: %d\n\n", (state==0)?"START":"COUNT//STUFF", TX_bit, TX_IN.read(), last_tx, stuff_en, stuff_error, write_pt_int.read(), count));
+
+  last_tx = TX_IN.read();
+
+  switch(state)
+  {
+    case(START):
+      encoder();
+      TX = TX_bit;
+      if(stuff_en)
+      {
+        count++;
+        state = COUNT;
+      }
+      break;
+
+    case(COUNT):
+      encoder();
+      if(!stuff_en)
+      {
+        count = 1;
+        TX = TX_bit;
+        state = START;
+      }
+      else if(TX_bit == last_tx)
+      {
+        count++;
+        TX = TX_bit;
+      }
+      else if(TX_bit != last_tx)
+      {
+        count = 1;
+        TX = TX_bit;
+      }
+      if(count == 5 && TX_bit == last_tx) // STUFF
+      {
+        state = STUFF;
+      }
+      break;
+    case (STUFF):
+      debug(pc.printf("stuff - write\n"));
+      state = COUNT;
+      TX = !TX_bit;
+      count = 1;
+      break;
+  }
+  
+}
+
 int main() {
   RX_OUT = 1;
   TX = 1;
 
-  while(!BT);
-  wait(0.5);
+  sample_pt = 0;
+  wrt_sp_pt = 0;
+  read_pt = 0;
+  write_pt = 0;
+
 
   frame_send.SOF = 0;
   frame_send.ID = 20;
   frame_send.SRR = 0;
-  frame_send.RTR = 1;
+  frame_send.RTR = 0;
   frame_send.IDE = 0;
   frame_send.R0 = 0;
-  frame_send.IDB = 200;
+  frame_send.IDB = 0;
   frame_send.R1 = 0;
   frame_send.R2 = 0;
   frame_send.DLC = 2;
@@ -1087,19 +1098,23 @@ int main() {
   frame_send.ACK_D = 1;
   frame_send.EOFRAME = 127;
  
-  RX.fall(&edgeDetector);
-  tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
   
+  // wrt_sp_pt_int.rise(&bitstuffWRITE);
   sample_pt_int.rise(&bitstuffREAD);
-  wrt_sp_pt_int.rise(&bitstuffWRITE);
 
+  // write_pt_int.rise(&encoder);
   read_pt_int.rise(&decoder);
-  write_pt_int.rise(&encoder);
 
-  write_en = 1;
+  RX.fall(&edgeDetector);
+
+  while(!BT);
+  wait(0.5);
+  
+  tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
+
+  // write_en = 1;
   // wait(0.2);
   // write_en = 0;
 
-  while(1) {
-  }
+  while(1);
 }
