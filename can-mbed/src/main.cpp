@@ -94,7 +94,7 @@ int CRC_CALC = 0;
 // alain - 17 - ack error
 // bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 18 - stuff error
-// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
+bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 19 - crc error
 // bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,0,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 24 - idle grande
@@ -102,12 +102,12 @@ int CRC_CALC = 0;
 
 int frame_index = 0;
 
-bool CRC_en = 0;
-bool TX_decod = 0;
-bool TX_en = 0;
-bool TX_ack = 0;
+bool CRC_en;
+bool TX_decod;
+bool TX_en;
+bool TX_ack;
 
-bool write_en = 0;
+bool write_en;
 
 bool bit_error = 0;
 bool writing_flag = 0;
@@ -348,11 +348,11 @@ void bitstuffREAD()
   RX_bit = RX;
 
   // Debug <--
-  // RX_bit = frame[frame_index];
-  // frame_index++;
+  RX_bit = frame[frame_index];
+  frame_index++;
   // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
-  // if(frame_index >= sizeof(frame)/sizeof(bool))
-  //   frame_index = 0;
+  if(frame_index >= sizeof(frame)/sizeof(bool))
+    frame_index = 0;
   // Debug -->
 
   switch(state)
@@ -415,10 +415,7 @@ void bitstuffWRITE()
   write_pt = 0;
   last_tx = TX_IN.read();
 
-  // Debug
-  RX_OUT = TX_IN
-
-  switch (state)
+  switch(state)
   {
     case(START):
       TX = TX_bit;
