@@ -15,14 +15,10 @@
 #define PIN_TX_IN A1
 
 #define PIN_SP_OUT D4
-#define PIN_RD_PT_OUT D5
 #define PIN_WRT_OUT D6
-#define PIN_WRT_PT_OUT D7
 
 #define PIN_SP_IN PF_2
-#define PIN_RD_PT_IN A3
 #define PIN_WRT_IN A4
-#define PIN_WRT_PT_IN A5
 
 DigitalIn BT(BUTTON1);
 
@@ -87,7 +83,7 @@ int CRC_CALC = 0;
 // Frame crc ext certo
 // bool frame[] = {0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1};
 // alain - 1
-bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
+// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 9
 // bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,1,0,0,1,0,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 // alain - 12
@@ -100,6 +96,7 @@ bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
 // bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,0,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
 // alain - 24 - idle grande
 // bool frame[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1};
+bool frame[] = {1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1};
 
 int frame_index = 0;
 
@@ -131,15 +128,6 @@ InterruptIn sample_pt_int(PIN_SP_IN);
 // Bit Timing -> Bit Stuffing
 DigitalOut wrt_sp_pt(PIN_WRT_OUT);
 InterruptIn wrt_sp_pt_int(PIN_WRT_IN);
-
-// Bit Stuffing -> Arbitration + Decoder
-DigitalOut read_pt(PIN_RD_PT_OUT);
-InterruptIn read_pt_int(PIN_RD_PT_IN);
-
-// Bit Stuffing -> Encoder 
-DigitalOut write_pt(PIN_WRT_PT_OUT);
-InterruptIn write_pt_int(PIN_WRT_PT_IN);
-
 
 Ticker tq_clock;
 
@@ -648,9 +636,9 @@ void encoder(){
   static int state = 0;
   static int bit_cnt = 0;
   // DEBUG
-  RX_bit = TX_bit;
+  // RX_bit = TX_bit;
 
-  debug(pc.printf("%d %d   --> ENCODER State: %s, bit_ctn: %d\n", TX_bit, RX_bit, print_state(state), bit_cnt));
+  // debug(pc.printf("%d %d   --> ENCODER State: %s, bit_ctn: %d\n", TX_bit, RX_bit, print_state(state), bit_cnt));
 
   if(TX_en){
     state = IDLE;
@@ -950,19 +938,18 @@ void bitstuffREAD()
   
   // debug(pc.printf("         - stuff READ: status: %s - RX_bit: %d - stuff_en: %d - error: %d - read_pt: %d - count: %d\n", (state==0)?"START":"COUNT", RX_bit, stuff_en, stuff_error, read_pt_int.read(), count));
 
-  // read_pt = 0;
-  // last_rx = RX_bit;
-  // RX_bit = RX;
-  // RX_bit = TX_IN.read();
+  last_rx = RX_bit;
+  RX_bit = RX;
+  RX_bit = TX_IN.read();
 
   // pc.printf("att                                   %d\n", RX_bit);
 
   // Debug <--
-  RX_bit = frame[frame_index];
-  frame_index++;
-  // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
-  if(frame_index >= sizeof(frame)/sizeof(bool))
-    frame_index = 0;
+  // RX_bit = frame[frame_index];
+  // frame_index++;
+  // // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
+  // if(frame_index >= sizeof(frame)/sizeof(bool))
+  //   frame_index = 0;
   // Debug -->
 
   switch(state)
@@ -999,13 +986,13 @@ void bitstuffREAD()
         }
         else if(RX_bit != last_rx && count == 5) // STUFF
         {
-          count = 0;
+          count = 1;
           // state = START;
           debug(pc.printf("stuff - read\n"));
         }
         else if(RX_bit != last_rx && count != 5)
         {
-          count = 0;
+          count = 1;
           decoder();
           // state = START;
         }
@@ -1064,6 +1051,7 @@ void bitstuffWRITE()
       debug(pc.printf("stuff - write\n"));
       state = COUNT;
       TX = !TX_bit;
+      TX_bit = TX_IN.read();
       count = 1;
       break;
   }
@@ -1076,12 +1064,10 @@ int main() {
 
   sample_pt = 0;
   wrt_sp_pt = 0;
-  read_pt = 0;
-  write_pt = 0;
 
 
   frame_send.SOF = 0;
-  frame_send.ID = 20;
+  frame_send.ID = 0x20;
   frame_send.SRR = 0;
   frame_send.RTR = 0;
   frame_send.IDE = 0;
@@ -1099,11 +1085,11 @@ int main() {
   frame_send.EOFRAME = 127;
  
   
-  // wrt_sp_pt_int.rise(&bitstuffWRITE);
+  wrt_sp_pt_int.rise(&bitstuffWRITE);
   sample_pt_int.rise(&bitstuffREAD);
 
   // write_pt_int.rise(&encoder);
-  read_pt_int.rise(&decoder);
+  // read_pt_int.rise(&decoder);
 
   RX.fall(&edgeDetector);
 
@@ -1112,9 +1098,9 @@ int main() {
   
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
 
-  // write_en = 1;
-  // wait(0.2);
-  // write_en = 0;
+  write_en = 1;
+  wait(0.2);
+  write_en = 0;
 
   while(1);
 }
