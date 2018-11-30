@@ -109,9 +109,6 @@ bool writing_flag = 0;
 
 bool last_tx = 1;
 
-// DEBUG
-DigitalIn TX_IN(PIN_TX_IN);
-
 // INTERFACES
 InterruptIn RX(PIN_RX_IN);
 DigitalOut TX(PIN_TX_OUT);
@@ -934,10 +931,7 @@ void bitstuffREAD()
   // debug(pc.printf("         - stuff READ: status: %s - RX_bit: %d - stuff_en: %d - error: %d - read_pt: %d - count: %d\n", (state==0)?"START":"COUNT", RX_bit, stuff_en, stuff_error, read_pt_int.read(), count));
 
   last_rx = RX_bit;
-  RX_bit = RX.read();
-  // RX_bit = TX_IN.read();
-
-  // pc.printf("att                                   %d\n", RX_bit);
+  RX_bit = RX.read(); // TRANSCIEVER
 
   // Debug <--
   // RX_bit = frame[frame_index];
@@ -1005,8 +999,7 @@ void bitstuffWRITE()
 
   // debug(pc.printf("- stuff WRT: status: %s - TX_bit: %d - TX: %d - last TX: %d -  stuff_en: %d - error: %d - read_pt: %d - count: %d\n\n", (state==0)?"START":"COUNT//STUFF", TX_bit, TX_IN.read(), last_tx, stuff_en, stuff_error, write_pt_int.read(), count));
 
-  // last_tx = TX_IN.read();
-  last_tx = RX.read();
+  last_tx = RX.read();  // TRANSCIEVER
 
   switch(state)
   {
@@ -1047,8 +1040,7 @@ void bitstuffWRITE()
       debug(pc.printf("stuff - write\n"));
       state = COUNT;
       TX = !TX_bit;
-      // TX_bit = TX_IN.read();
-      TX_bit = RX.read();
+      TX_bit = RX.read(); // TRANSCIEVER
       count = 1;
       break;
   }
