@@ -10,14 +10,12 @@
 
 #define PIN_RX_IN D2
 #define PIN_TX_OUT D3
+#define PIN_TX_IN A1 // DEBUG
 
-#define PIN_RX_OUT A0
-#define PIN_TX_IN A1
-
-#define PIN_SP_OUT D4
+#define PIN_SP_OUT D5
 #define PIN_WRT_OUT D6
 
-#define PIN_SP_IN PF_2
+#define PIN_SP_IN A5
 #define PIN_WRT_IN A4
 
 DigitalIn BT(BUTTON1);
@@ -27,7 +25,6 @@ Serial pc(USBTX, USBRX, 1843200);
 // #define F_OSC 16000000
 #define TIME_QUANTA_S 0.01
 // #define TIME_QUANTA_S (2 / F_OSC)
-// #define BIT_RATE 500000
 
 #define SJW 1
 #define SYNC_SEG 1
@@ -114,8 +111,6 @@ bool last_tx = 1;
 
 // DEBUG
 DigitalIn TX_IN(PIN_TX_IN);
-DigitalOut RX_OUT(PIN_RX_OUT);
-
 
 // INTERFACES
 InterruptIn RX(PIN_RX_IN);
@@ -1058,9 +1053,7 @@ void bitstuffWRITE()
   
 }
 
-int main() {
-  RX_OUT = 1;
-  TX = 1;
+int main() {  TX = 1;
 
   sample_pt = 0;
   wrt_sp_pt = 0;
