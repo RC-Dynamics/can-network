@@ -1083,9 +1083,6 @@ int main() {  TX = 1;
   wrt_sp_pt_int.rise(&bitstuffWRITE);
   sample_pt_int.rise(&bitstuffREAD);
 
-  // write_pt_int.rise(&encoder);
-  // read_pt_int.rise(&decoder);
-
   RX.fall(&edgeDetector);
 
   while(!BT);
