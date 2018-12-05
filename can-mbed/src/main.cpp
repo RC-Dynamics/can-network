@@ -5,10 +5,7 @@
 
 #include "cases.h"
 
-#define DEBUG_SEND
-// #define DEBUG_RECEIVE
-
-#define DEBUG
+// #define DEBUG
 #ifdef DEBUG
 #define debug(x) x
 #else
@@ -218,19 +215,34 @@ std::string print_state(int st){
   return "";
 }
 
+void print_frame(CAN_FRAME* frame, CAN_FRAME* frame2){
+  printf("\nPrinting Frames: \n\tSent: \t\t Receive:\n");
+  printf("ID:    %x \t\t %x \n", frame->ID, frame2->ID);
+  printf("RTR:   %d \t\t %d \n", frame->RTR, frame2->RTR);
+  printf("IDE:   %d \t\t %d \n", frame->IDE, frame2->IDE);
+  printf("IDB:   %" PRIx32 " \t\t %" PRIx32 " \n", frame->IDB, frame2->IDB);
+  printf("SRR:   %d \t\t %d \n", frame->SRR, frame2->SRR);
+  printf("DLC:   %d \t\t %d \n", frame->DLC, frame2->DLC);
+  printf("DATA:  %" PRIx64 " \t %" PRIx64 " \n", frame->DATA, frame2->DATA);
+  printf("CRC_V: %d \t\t %d \n", frame->CRC_V, frame2->CRC_V);
+  printf("CRC_D: %d \t\t %d \n", frame->CRC_D, frame2->CRC_D);
+  printf("ACK_S: %d \t\t %d \n", frame->ACK_S, frame2->ACK_S);
+  printf("ACK_D: %d \t\t %d \n\n", frame->ACK_D, frame2->ACK_D);
+}
+
 void print_frame(CAN_FRAME* frame){
-  printf("Printing Frame: \n");
-  printf("ID: %x\n", frame->ID);
-  printf("RTR: %d\n", frame->RTR);
-  printf("IDE: %d\n", frame->IDE);
-  printf("IDB: %" PRIx32 "\n", frame->IDB);
-  printf("SRR: %d\n", frame->SRR);
-  printf("DLC: %d\n", frame->DLC);
-  printf("DATA: %" PRIx64 "\n", frame->DATA);
-  printf("CRC_V: %d\n", frame->CRC_V);
-  printf("CRC_D: %d\n", frame->CRC_D);
-  printf("ACK_S: %d\n", frame->ACK_S);
-  printf("ACK_D: %d\n", frame->ACK_D);
+  printf("\nPrinting Frame:\n");
+  printf("ID:    %x\n", frame->ID);
+  printf("RTR:   %d\n" , frame->RTR);
+  printf("IDE:   %d\n" , frame->IDE);
+  printf("IDB:   %" PRIx32 " \n", frame->IDB);
+  printf("SRR:   %d\n" , frame->SRR);
+  printf("DLC:   %d\n" , frame->DLC);
+  printf("DATA:  %" PRIx64 " \n", frame->DATA);
+  printf("CRC_V: %d\n" , frame->CRC_V);
+  printf("CRC_D: %d\n" , frame->CRC_D);
+  printf("ACK_S: %d\n" , frame->ACK_S);
+  printf("ACK_D: %d\n\n" , frame->ACK_D);
 }
 
 void edgeDetector(){
@@ -318,7 +330,6 @@ void bitTimingSM(){
   }
 }
 
-
 void calculateCRC(bool bit)
 {
   if (CRC_en) {
@@ -347,7 +358,7 @@ void decoder(){
     TX_decod = 0;
     TX_en = 1;
     state = ERROR_FLAG;
-    debug(pc.printf("Error Detected: %s\n", (stuff_error)?"STUFF_ERROR": "BIT_ERROR"));
+    debug(pc.printf("st machine: Error Detected: %s\n", (stuff_error)?"STUFF_ERROR": "BIT_ERROR"));
     stuff_error = 0;
     bit_error = 0;
   }
@@ -355,12 +366,13 @@ void decoder(){
   {
     case(IDLE):
       idle = 1;
-      debug(pc.printf("IDLE\n"));
+      debug(pc.printf("."));
       if(bit == 0)
       {
+        debug(pc.printf("\n"));
         stuff_en = 1;
         frame_recv.SOF = bit;
-        debug(pc.printf("START OF FRAME\n"));
+        debug(pc.printf("st machine: START OF FRAME\n"));
         bit_cnt = 0;
         frame_recv.ID = 0;
         CRC_CALC = 0;
@@ -374,18 +386,18 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 11)   
       {
-        debug(pc.printf("ID: %x \n", frame_recv.ID));
+        debug(pc.printf("st machine: ID: %x \n", frame_recv.ID));
         state = SRR;
        }
       break;  
     case(SRR):
       frame_recv.RTR = bit;
-      debug(pc.printf("RTR/SRR: %d \n", frame_recv.RTR));
+      debug(pc.printf("st machine: RTR/SRR: %d \n", frame_recv.RTR));
       state = IDE;
       break;
     case(IDE):
       frame_recv.IDE = bit;
-      debug(pc.printf("IDE: %d \n", frame_recv.IDE));
+      debug(pc.printf("st machine: IDE: %d \n", frame_recv.IDE));
       bit_cnt = 0;
       if(bit == 0) 
       {
@@ -394,7 +406,7 @@ void decoder(){
       else if(bit == 1 && frame_recv.RTR == 1) 
       {
         frame_recv.SRR = frame_recv.RTR;
-        debug(pc.printf("SRR: %d \n", frame_recv.SRR));
+        debug(pc.printf("st machine: SRR: %d \n", frame_recv.SRR));
         frame_recv.IDB = 0;
         state = IDB;
       }
@@ -408,7 +420,7 @@ void decoder(){
       break;
     case(R0):
       frame_recv.R0 = bit;
-      debug(pc.printf("R0: %d \n", frame_recv.R0));
+      debug(pc.printf("st machine: R0: %d \n", frame_recv.R0));
       frame_recv.DLC = 0;
       state = DLC;
      break;
@@ -417,24 +429,24 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 18)
       {
-        debug(pc.printf("IDB: %" PRIx32 "\n", frame_recv.IDB));
+        debug(pc.printf("st machine: IDB: %" PRIx32 "\n", frame_recv.IDB));
         state = RTR;
       }
       break;
     case(RTR):
       frame_recv.RTR = bit;
-      debug(pc.printf("RTR: %d \n", frame_recv.RTR));
+      debug(pc.printf("st machine: RTR: %d \n", frame_recv.RTR));
       state = R1;
       break;
     case(R1):
       frame_recv.R1 = bit;
-      debug(pc.printf("R1: %d \n", frame_recv.R1));
+      debug(pc.printf("st machine: R1: %d \n", frame_recv.R1));
       state = R2;
       break;
     case(R2):
       frame_recv.R2 = bit;
       frame_recv.DLC = 0;
-      debug(pc.printf("R2: %d \n", frame_recv.R2));
+      debug(pc.printf("st machine: R2: %d \n", frame_recv.R2));
       bit_cnt = 0;
       state = DLC;
       break;
@@ -444,7 +456,7 @@ void decoder(){
       if(bit_cnt == 4)
       {
         bit_cnt = 0;
-        debug(pc.printf("DLC: %d ", frame_recv.DLC));
+        debug(pc.printf("st machine: DLC: %d ", frame_recv.DLC));
         if(frame_recv.DLC > 8)
         {
           frame_recv.DLC = 8;
@@ -453,6 +465,7 @@ void decoder(){
         debug(pc.printf("\n"));
         if(frame_recv.RTR == 1 || frame_recv.DLC == 0)
         {
+          bit_cnt = 0;
           frame_recv.CRC_V = 0;
           state = CRC_V;
         }
@@ -468,7 +481,7 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == (frame_recv.DLC * 8))
       {
-        debug(pc.printf("DATA: %" PRIx64 "\n", frame_recv.DATA));
+        debug(pc.printf("st machine: DATA: %" PRIx64 "\n", frame_recv.DATA));
         bit_cnt = 0;
         frame_recv.CRC_V = 0;
         state = CRC_V;
@@ -480,8 +493,8 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 15)
       {
-        debug(pc.printf("CRC_Value: %d \n", frame_recv.CRC_V));
-        debug(pc.printf("CRC_CALC: %d \n", CRC_CALC));
+        debug(pc.printf("st machine: CRC_Value: %d \n", frame_recv.CRC_V));
+        debug(pc.printf("st machine: CRC_CALC: %d \n", CRC_CALC));
         stuff_en = 0;
         state = CRC_D;
       }
@@ -489,7 +502,7 @@ void decoder(){
     case(CRC_D):
       frame_recv.CRC_D = bit;
       TX_decod = 0; 
-      debug(pc.printf("CRC_D: %d\n", bit));
+      debug(pc.printf("st machine: CRC_D: %d\n", bit));
       if(bit == 1)
       {
         TX_ack = 1;
@@ -505,19 +518,19 @@ void decoder(){
       break;
     case(ACK_S):
       frame_recv.ACK_S = bit;
-      debug(pc.printf("ACK_S: %d\n", bit));
+      debug(pc.printf("st machine: ACK_S: %d\n", bit));
       TX_decod = 1; 
       state = ACK_D;
       break;  
     case(ACK_D):
       frame_recv.ACK_D = bit;
-      debug(pc.printf("ACK_D: %d \n", frame_recv.ACK_D));
+      debug(pc.printf("st machine: ACK_D: %d \n", frame_recv.ACK_D));
       if(frame_recv.CRC_V != CRC_CALC || bit == 0)
       {
         debug(if(frame_recv.CRC_V != CRC_CALC))
-          debug(pc.printf("CRC_V =! CRC_CALC\n"));
+          debug(pc.printf("st machine: CRC_V =! CRC_CALC\n"));
         debug(else)
-          debug(pc.printf("ACK Error\n"));
+          debug(pc.printf("st machine: ACK Error\n"));
         stuff_en = 0;
         bit_cnt = 0;
         TX_decod = 0; 
@@ -537,7 +550,7 @@ void decoder(){
       if(bit == 1 && bit_cnt == 7)
       {
         bit_cnt = 0;
-        debug(pc.printf("EOFRAME\n"));
+        debug(pc.printf("st machine: EOFRAME\n"));
         state = INTERFRAME;
       }
       else if(bit == 0)
@@ -551,18 +564,24 @@ void decoder(){
      break;
     case(INTERFRAME):
       bit_cnt++;
-      
       if(bit == 0)
       {
         TX_decod = 0;
         TX_en = 1; 
         bit_cnt = 0;
-        debug(pc.printf("INTERFRAME\n"));
+        debug(pc.printf("st machine: INTERFRAME\n"));
         state = OVERLOAD;
       }
       else if(bit_cnt == 2)
       {
-        debug(pc.printf("INTERFRAME\n"));
+        debug(pc.printf("st machine: INTERFRAME\n"));
+        #ifdef DEBUG_SEND
+          print_frame((CAN_FRAME*)&frame_dbg, &frame_recv);
+        #else
+          print_frame(&frame_recv);
+        #endif
+
+        debug(pc.printf("st machine: IDLE\n"));
         state = IDLE;
       }
      break;
@@ -573,7 +592,7 @@ void decoder(){
         bit_cnt = 0;
         TX_decod = 1; 
         TX_en = 1;
-        debug(pc.printf("OVERLOAD\n"));
+        debug(pc.printf("st machine: OVERLOAD\n"));
         state = OVERLOAD_D;
       }
       break;
@@ -587,7 +606,7 @@ void decoder(){
       {
         bit_cnt = 0;
         TX_en = 0;
-        debug(pc.printf("OVERLOAD_DELIMITER\n"));
+        debug(pc.printf("st machine: OVERLOAD_DELIMITER\n"));
         state = INTERFRAME;
       }
       break;
@@ -599,7 +618,7 @@ void decoder(){
         bit_cnt = 0;
         TX_decod = 1; 
         TX_en = 1;
-        debug(pc.printf("ERROR_FLAG\n"));
+        debug(pc.printf("st machine: ERROR_FLAG\n"));
         state = ERROR_D;
       }
      break;
@@ -613,7 +632,7 @@ void decoder(){
       {
         bit_cnt = 0;
         TX_en = 0;
-        debug(pc.printf("ERROR_DELIMITER\n"));
+        debug(pc.printf("st machine: ERROR_DELIMITER\n"));
         state = INTERFRAME;
       }
       break;
@@ -676,6 +695,9 @@ void encoder(){
         break;
       }
       if(bit_cnt == 11){
+        if(frame_send.IDE == 0){
+            frame_send.SRR = frame_send.RTR;
+        }
         TX_bit = frame_send.SRR;
         state = SRR;
       } else {
@@ -684,7 +706,7 @@ void encoder(){
       }
       break;
 
-    case SRR:
+    case SRR: // RTR on Standard
       if(RX_bit != TX_bit) // ARBITRATION
       {
         state = IDLE;
@@ -795,13 +817,14 @@ void encoder(){
         break;
       }
       if(bit_cnt == 4){
-        if(frame_send.RTR == 1){
-          CRC_en = 0;
+        if(frame_send.RTR == 1 || frame_send.DLC == 0){
           bit_cnt = 1;
           TX_bit = CRC_CALC >> (15 - bit_cnt);
           state = CRC_V;
         } else {
           bit_cnt = 0;
+          if(frame_send.DLC > 8)
+            frame_send.DLC = 8;
           TX_bit = (frame_send.DATA >> ((frame_send.DLC * 8) - bit_cnt - 1)) & 1;
           bit_cnt++;
           state = DATA;
@@ -933,7 +956,7 @@ void bitstuffREAD()
     frame_index++;
     // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
     if(frame_index >= sizeof(frame)/sizeof(bool))
-      frame_index--; // Lock in Idle
+      frame_index = 0; // No Lock in Idle
   // Debug -->
   #endif
 
@@ -1049,8 +1072,10 @@ int main() {  TX = 1;
 
   RX.fall(&edgeDetector);
 
-  debug(fill_frame_debug());
-  debug(print_frame((CAN_FRAME*) &frame_dbg));
+#ifdef DEBUG_SEND
+  fill_frame_debug();
+  print_frame((CAN_FRAME*) &frame_dbg);
+#endif
 
   while(!BT);
   wait(0.5);
@@ -1059,12 +1084,21 @@ int main() {  TX = 1;
 
 #ifdef DEBUG_SEND
   // Sending Frame
+  pc.printf("Sending....\n");
   memcpy(&frame_send, &frame_dbg, sizeof(frame_send));
-
   write_en = 1;
-  wait(0.1);
-  write_en = 0;
+  wait(0.2);
+  // write_en = 0;
 #endif
 
-  while(1);
+  while(1){
+    if(BT){
+      pc.printf("Sending....\n");
+      write_en = 1;
+      wait(0.2);
+      // write_en = 0;
+    }
+
+  }
+  return 0;
 }
