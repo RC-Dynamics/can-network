@@ -5,7 +5,7 @@
 
 #include "cases.h"
 
-// #define DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define debug(x) x
 #else
