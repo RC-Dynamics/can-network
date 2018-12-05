@@ -1,7 +1,8 @@
 // Debug
 #include <inttypes.h>
 
-#define DEBUG_CASE 3
+// 0 for RX 
+#define DEBUG_CASE 1
 
 
 typedef struct FRAME_DEBUG
