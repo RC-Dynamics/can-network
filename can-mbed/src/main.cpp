@@ -1,5 +1,12 @@
 #include <inttypes.h>
+#include <string>
+
 #include <mbed.h>
+
+#include "cases.h"
+
+#define DEBUG_SEND
+// #define DEBUG_RECEIVE
 
 #define DEBUG
 #ifdef DEBUG
@@ -70,31 +77,6 @@ CAN_FRAME frame_recv;
 CAN_FRAME frame_send;
 int CRC_CALC = 0;
 
-// Debug        
-// Frame Wikipedia Original
-// bool frame[] = {1,1,1,1,0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,1,1,0,0,0,0,0,1,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1};
-// Frame Wikipedia sem bit stuff
-// bool frame[] = {0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1};
-// Frame crc certo
-// bool frame[] = {0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1};
-// Frame crc ext certo
-// bool frame[] = {0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1};
-// alain - 1
-// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
-// alain - 9
-// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,1,0,0,1,0,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-// alain - 12
-// bool frame [] = {0,1,0,0,0,1,0,0,1,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1};
-// alain - 17 - ack error
-// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
-// alain - 18 - stuff error
-// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
-// alain - 19 - crc error
-// bool frame[] = {0,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,0,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
-// alain - 24 - idle grande
-// bool frame[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1};
-bool frame[] = {1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1};
-
 int frame_index = 0;
 
 bool CRC_en;
@@ -162,7 +144,7 @@ enum states_coder
   SOF
 } states_coder;
 
-char* print_state(int st){
+std::string print_state(int st){
   switch(st){
     case IDLE:
       return  "IDLE";
@@ -230,10 +212,26 @@ char* print_state(int st){
     case SOF:
       return "SOF"; 
     break;
+    default:
+    break;
   }
-
+  return "";
 }
 
+void print_frame(CAN_FRAME* frame){
+  printf("Printing Frame: \n");
+  printf("ID: %x\n", frame->ID);
+  printf("RTR: %d\n", frame->RTR);
+  printf("IDE: %d\n", frame->IDE);
+  printf("IDB: %" PRIx32 "\n", frame->IDB);
+  printf("SRR: %d\n", frame->SRR);
+  printf("DLC: %d\n", frame->DLC);
+  printf("DATA: %" PRIx64 "\n", frame->DATA);
+  printf("CRC_V: %d\n", frame->CRC_V);
+  printf("CRC_D: %d\n", frame->CRC_D);
+  printf("ACK_S: %d\n", frame->ACK_S);
+  printf("ACK_D: %d\n", frame->ACK_D);
+}
 
 void edgeDetector(){
   if (idle)
@@ -247,7 +245,7 @@ void edgeDetector(){
     hard_sync = 0;
     soft_sync = 1;
   }
-  debug(pc.printf("Edge: Soft: %d, Hard: %d\n", soft_sync, hard_sync));
+  // debug(pc.printf("Edge: Soft: %d, Hard: %d\n", soft_sync, hard_sync));
 }
 
 void bitTimingSM(){
@@ -339,7 +337,7 @@ void decoder(){
   bool bit = RX_bit;
 
   // Debug
-  debug(pc.printf("%d %d   --> DECODER State: %s, bit_cnt: %d\n\n", TX_bit, bit, print_state(state), bit_cnt));
+  // debug(pc.printf("%d %d   --> DECODER State: %s, bit_cnt: %d\n\n", TX_bit, bit, print_state(state), bit_cnt));
   
 
   if(stuff_error || bit_error)
@@ -401,7 +399,7 @@ void decoder(){
         state = IDB;
       }
       else if(bit == 1 && frame_recv.RTR == 0) // RTR = SRR
-      { // OLHAR ENCODER
+      { 
         stuff_en = 0;
         TX_decod = 0;
         TX_en = 1;
@@ -419,7 +417,7 @@ void decoder(){
       bit_cnt++;
       if(bit_cnt == 18)
       {
-        debug(pc.printf("IDB: %x \n", frame_recv.IDB));
+        debug(pc.printf("IDB: %" PRIx32 "\n", frame_recv.IDB));
         state = RTR;
       }
       break;
@@ -455,7 +453,6 @@ void decoder(){
         debug(pc.printf("\n"));
         if(frame_recv.RTR == 1 || frame_recv.DLC == 0)
         {
-          // CRC_en = 0;
           frame_recv.CRC_V = 0;
           state = CRC_V;
         }
@@ -491,7 +488,7 @@ void decoder(){
       break;
     case(CRC_D):
       frame_recv.CRC_D = bit;
-      TX_decod = 0; // OLHAR ENCODER
+      TX_decod = 0; 
       debug(pc.printf("CRC_D: %d\n", bit));
       if(bit == 1)
       {
@@ -509,7 +506,7 @@ void decoder(){
     case(ACK_S):
       frame_recv.ACK_S = bit;
       debug(pc.printf("ACK_S: %d\n", bit));
-      TX_decod = 1; // OLHAR ENCODER
+      TX_decod = 1; 
       state = ACK_D;
       break;  
     case(ACK_D):
@@ -523,7 +520,7 @@ void decoder(){
           debug(pc.printf("ACK Error\n"));
         stuff_en = 0;
         bit_cnt = 0;
-        TX_decod = 0; // OLHAR ENCODER
+        TX_decod = 0; 
         TX_en = 1;
         state = ERROR_FLAG;
       }
@@ -547,7 +544,7 @@ void decoder(){
       {
         stuff_en = 0;
         bit_cnt = 0;
-        TX_decod = 0; // OLHAR ENCODER
+        TX_decod = 0; 
         TX_en = 1;
         state = ERROR_FLAG;
       }
@@ -558,7 +555,7 @@ void decoder(){
       if(bit == 0)
       {
         TX_decod = 0;
-        TX_en = 1; // OLHAR ENCODER
+        TX_en = 1; 
         bit_cnt = 0;
         debug(pc.printf("INTERFRAME\n"));
         state = OVERLOAD;
@@ -574,7 +571,7 @@ void decoder(){
       if(bit_cnt == 6)
       {
         bit_cnt = 0;
-        TX_decod = 1; // OLHAR ENCODER
+        TX_decod = 1; 
         TX_en = 1;
         debug(pc.printf("OVERLOAD\n"));
         state = OVERLOAD_D;
@@ -629,7 +626,6 @@ void encoder(){
   static int bit_cnt = 0;
   // DEBUG
   // RX_bit = TX_bit;
-
   // debug(pc.printf("%d %d   --> ENCODER State: %s, bit_ctn: %d\n", TX_bit, RX_bit, print_state(state), bit_cnt));
 
   if(TX_en){
@@ -927,19 +923,19 @@ void bitstuffREAD()
   static int count = 0;
   static int state = 0;
   static int last_rx;
-  
-  // debug(pc.printf("         - stuff READ: status: %s - RX_bit: %d - stuff_en: %d - error: %d - read_pt: %d - count: %d\n", (state==0)?"START":"COUNT", RX_bit, stuff_en, stuff_error, read_pt_int.read(), count));
 
   last_rx = RX_bit;
   RX_bit = RX.read(); // TRANSCIEVER
 
+  #ifdef DEBUG_RECEIVE
   // Debug <--
-  // RX_bit = frame[frame_index];
-  // frame_index++;
-  // // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
-  // if(frame_index >= sizeof(frame)/sizeof(bool))
-  //   frame_index = 0;
+    RX_bit = frame[frame_index];
+    frame_index++;
+    // debug(pc.printf("RX_bit: %d, Frame Index: %d, \n", RX_bit, frame_index));
+    if(frame_index >= sizeof(frame)/sizeof(bool))
+      frame_index--; // Lock in Idle
   // Debug -->
+  #endif
 
   switch(state)
   {
@@ -976,14 +972,12 @@ void bitstuffREAD()
         else if(RX_bit != last_rx && count == 5) // STUFF
         {
           count = 1;
-          // state = START;
-          debug(pc.printf("stuff - read\n"));
+          // debug(pc.printf("stuff - read\n"));
         }
         else if(RX_bit != last_rx && count != 5)
         {
           count = 1;
           decoder();
-          // state = START;
         }
       }
       break;
@@ -996,8 +990,6 @@ void bitstuffWRITE()
 {
   static int count = 0;
   static int state = 0;
-
-  // debug(pc.printf("- stuff WRT: status: %s - TX_bit: %d - TX: %d - last TX: %d -  stuff_en: %d - error: %d - read_pt: %d - count: %d\n\n", (state==0)?"START":"COUNT//STUFF", TX_bit, TX_IN.read(), last_tx, stuff_en, stuff_error, write_pt_int.read(), count));
 
   last_tx = RX.read();  // TRANSCIEVER
 
@@ -1037,7 +1029,7 @@ void bitstuffWRITE()
       }
       break;
     case (STUFF):
-      debug(pc.printf("stuff - write\n"));
+      // debug(pc.printf("stuff - write\n"));
       state = COUNT;
       TX = !TX_bit;
       TX_bit = RX.read(); // TRANSCIEVER
@@ -1052,39 +1044,27 @@ int main() {  TX = 1;
   sample_pt = 0;
   wrt_sp_pt = 0;
 
-
-  frame_send.SOF = 0;
-  frame_send.ID = 0x20;
-  frame_send.SRR = 0;
-  frame_send.RTR = 0;
-  frame_send.IDE = 0;
-  frame_send.R0 = 0;
-  frame_send.IDB = 0;
-  frame_send.R1 = 0;
-  frame_send.R2 = 0;
-  frame_send.DLC = 2;
-  frame_send.DATA = 0xaaaa;
-  frame_send.data_b = false;
-  frame_send.CRC_V = 30547;
-  frame_send.CRC_D = 1;
-  frame_send.ACK_S = 0;
-  frame_send.ACK_D = 1;
-  frame_send.EOFRAME = 127;
- 
-  
   wrt_sp_pt_int.rise(&bitstuffWRITE);
   sample_pt_int.rise(&bitstuffREAD);
 
   RX.fall(&edgeDetector);
 
+  debug(fill_frame_debug());
+  debug(print_frame((CAN_FRAME*) &frame_dbg));
+
   while(!BT);
   wait(0.5);
-  
+
   tq_clock.attach(bitTimingSM, TIME_QUANTA_S);
 
+#ifdef DEBUG_SEND
+  // Sending Frame
+  memcpy(&frame_send, &frame_dbg, sizeof(frame_send));
+
   write_en = 1;
-  wait(0.2);
+  wait(0.1);
   write_en = 0;
+#endif
 
   while(1);
 }
